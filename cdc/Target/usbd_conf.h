@@ -20,8 +20,8 @@
 
 enum usbd_conf__device_mode
 {
-    USBD_CONF__DEVICE_MODE__FULL_SPEED = 0,
-    USBD_CONF__DEVICE_MODE__HIGH_SPEED = 1
+    USBD_CONF__DEV_MODE__FULL_SPEED = 0,
+    USBD_CONF__DEV_MODE__HIGH_SPEED = 1
 };
 
 /** Alias for memory allocation. */

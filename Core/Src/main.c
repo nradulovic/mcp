@@ -61,6 +61,18 @@ static void MX_TIM10_Init(void);
 
 /* USER CODE END 0 */
 
+static void usb_receive(void * arg, const void * data, uint16_t length);
+
+static struct app_usbd_cdc__context usbd_cdc_context = {
+    .receive = usb_receive
+};
+
+static void usb_receive(void * arg, const void * data, uint16_t length)
+{
+    UNUSED(arg);
+    app_usbd_cdc__transmit(data, length);
+}
+
 /**
   * @brief  The application entry point.
   * @retval int
@@ -90,7 +102,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM10_Init();
-  app_usbd_cdc__init();
+  app_usbd_cdc__init(&usbd_cdc_context);
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */

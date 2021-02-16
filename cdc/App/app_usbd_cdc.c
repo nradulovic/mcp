@@ -16,11 +16,11 @@
 static int8_t init(void);
 static int8_t teardown(void);
 static int8_t control(uint8_t cmd, uint8_t *pbuf, uint16_t length);
-static int8_t receive(uint8_t *pbuf, uint32_t *Len);
+static int8_t receive(uint8_t *pbuf, uint32_t *length);
 static int8_t transmit_complete(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
 
 /* USB Device Core handle declaration. */
-static USBD_HandleTypeDef usbd_cdc__usbd_cdc_handle;
+static USBD_HandleTypeDef handle;
 
 /* Create buffer for reception and transmission           */
 /** Received data over USB are stored in this buffer      */
@@ -35,6 +35,7 @@ static USBD_CDC_ItfTypeDef app_usbd_cdc_if__fops =
       control,
       receive,
       transmit_complete };
+static const struct app_usbd_cdc__context * g_context;
 
 /**
  * @brief  Initializes the CDC media low layer over the FS USB IP
@@ -43,8 +44,8 @@ static USBD_CDC_ItfTypeDef app_usbd_cdc_if__fops =
 static int8_t init(void)
 {
     /* Set Application Buffers */
-    USBD_CDC_SetTxBuffer(&usbd_cdc__usbd_cdc_handle, tx_buffer, 0);
-    USBD_CDC_SetRxBuffer(&usbd_cdc__usbd_cdc_handle, rx_buffer);
+    USBD_CDC_SetTxBuffer(&handle, tx_buffer, 0);
+    USBD_CDC_SetRxBuffer(&handle, rx_buffer);
     return (USBD_OK);
 }
 
@@ -66,6 +67,9 @@ static int8_t teardown(void)
  */
 static int8_t control(uint8_t cmd, uint8_t *pbuf, uint16_t length)
 {
+    UNUSED(pbuf);
+    UNUSED(length);
+
     switch (cmd) {
     case CDC_SEND_ENCAPSULATED_COMMAND:
         break;
@@ -124,12 +128,11 @@ static int8_t control(uint8_t cmd, uint8_t *pbuf, uint16_t length)
  * @param  Len: Number of data received (in bytes)
  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
  */
-static int8_t receive(uint8_t *Buf, uint32_t *Len)
+static int8_t receive(uint8_t *buffer, uint32_t *length)
 {
-    /* Echo all what is received */
-    app_usbd_cdc__transmit(Buf, *Len);
-    USBD_CDC_SetRxBuffer(&usbd_cdc__usbd_cdc_handle, &Buf[0]);
-    USBD_CDC_ReceivePacket(&usbd_cdc__usbd_cdc_handle);
+    g_context->receive(g_context->arg, buffer, (uint16_t)*length);
+    USBD_CDC_SetRxBuffer(&handle, &buffer[0]);
+    USBD_CDC_ReceivePacket(&handle);
     return (USBD_OK);
 }
 
@@ -149,30 +152,43 @@ static int8_t transmit_complete(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 {
     UNUSED(Buf);
     UNUSED(Len);
-    UNUSED(epnum);
-    return USBD_OK;
+    int8_t retval;
+
+    switch (epnum) {
+    case CDC_IN_EP:
+        if (g_context->complete) {
+            g_context->complete(g_context->arg);
+        }
+        retval = USBD_OK;
+        break;
+    default:
+        retval = USBD_FAIL;
+        break;
+    }
+    return retval;
 }
 
 /**
  * Init USB device Library, add supported class and start the library
  */
-void app_usbd_cdc__init(void)
+void app_usbd_cdc__init(const struct app_usbd_cdc__context * context)
 {
+    g_context = context;
     /* Init Device Library, add supported class and start the library. */
-    if (USBD_Init(&usbd_cdc__usbd_cdc_handle, &usbd_cdc__desc__fs_desc,
-                    USBD_CONF__DEVICE_MODE__FULL_SPEED) != USBD_OK) {
+    if (USBD_Init(&handle, &usbd_cdc__desc__fs_desc, USBD_CONF__DEV_MODE__FULL_SPEED) != USBD_OK) {
         Error_Handler();
     }
-    if (USBD_RegisterClass(&usbd_cdc__usbd_cdc_handle, &USBD_CDC) != USBD_OK) {
+    if (USBD_RegisterClass(&handle, &USBD_CDC) != USBD_OK) {
         Error_Handler();
     }
-    if (USBD_CDC_RegisterInterface(&usbd_cdc__usbd_cdc_handle, &app_usbd_cdc_if__fops) != USBD_OK) {
+    if (USBD_CDC_RegisterInterface(&handle, &app_usbd_cdc_if__fops) != USBD_OK) {
         Error_Handler();
     }
-    if (USBD_Start(&usbd_cdc__usbd_cdc_handle) != USBD_OK) {
+    if (USBD_Start(&handle) != USBD_OK) {
         Error_Handler();
     }
 }
+
 /**
  * @brief  app_usbd_cdc_if__transmit
  *         Data to send over USB IN endpoint are sent over CDC interface
@@ -184,15 +200,30 @@ void app_usbd_cdc__init(void)
  * @param  Len: Number of data to be sent (in bytes)
  * @retval USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
  */
-uint8_t app_usbd_cdc__transmit(uint8_t *Buf, uint16_t Len)
+enum app_usbd_cdc__error app_usbd_cdc__transmit(const void * buffer, uint16_t length)
 {
-    uint8_t result = USBD_OK;
-    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*) usbd_cdc__usbd_cdc_handle.pClassData;
+    USBD_StatusTypeDef result;
+    enum app_usbd_cdc__error error;
+
+    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*) handle.pClassData;
     if (hcdc->TxState != 0) {
-        return USBD_BUSY;
+        return APP_USBD_CDC__ERROR__BUSY;
     }
-    USBD_CDC_SetTxBuffer(&usbd_cdc__usbd_cdc_handle, Buf, Len);
-    result = USBD_CDC_TransmitPacket(&usbd_cdc__usbd_cdc_handle);
-    return result;
+    /* Cast away const qualifier. We don't want to modify the whole USB library for this */
+    USBD_CDC_SetTxBuffer(&handle, (uint8_t *)buffer, length);
+    result = USBD_CDC_TransmitPacket(&handle);
+
+    switch (result) {
+    case USBD_OK:
+        error = APP_USBD_CDC__ERROR__OK;
+        break;
+    case USBD_BUSY:
+        error = APP_USBD_CDC__ERROR__BUSY;
+        break;
+    default:
+        error = APP_USBD_CDC__ERROR__FAIL;
+        break;
+    }
+    return error;
 }
 
