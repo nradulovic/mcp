@@ -8,12 +8,15 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "usbd_cdc_terminal.h"
 #include "terminal.h"
 #include "app_usbd_cdc.h"
 #include "config_usbd_cdc_terminal.h"
+#include "mdrv.h"
 #include "command_help.h"
+#include "command_write.h"
 
-struct usbd_cdc_terminal__context
+struct usbd_cdc_terminal__state
 {
     struct usb_input
     {
@@ -28,25 +31,28 @@ static void usb_receive(void *arg, const void *data, uint16_t length);
 
 static char g_terminal_buffer[CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE];
 
-static const struct terminal__command_descriptor g__commands[] = {
+static const struct terminal__command_descriptor g__terminal_commands[] = {
     {
         .command_id = "help",
         .interpreter = {
-            .fn = command_help__fn, }}};
+            .fn = command_help__fn, }},
+    {
+        .command_id = "write",
+        .interpreter = {
+            .fn = command_write__fn, }}};
 
 static struct terminal_descriptor g__terminal = {
-    .command_arg_buffer = &g_terminal_buffer[0],
-    .command_arg_size = CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE,
-    .commands = &g__commands[0],
+    .p__arg_buffer = &g_terminal_buffer[0],
+    .p__arg_size = CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE,
+    .p__commands = &g__terminal_commands[0],
     .error_message = "\r\nType 'help' for help.\r\n",
-    .no_commands = sizeof(g__commands) / sizeof(g__commands[0]),
-    .terminal_context = NULL};
+    .p__no_commands = sizeof(g__terminal_commands) / sizeof(g__terminal_commands[0])};
 
-static struct usbd_cdc_terminal__context g__context;
+static struct usbd_cdc_terminal__state g__state;
 
 static void usb_receive(void *arg, const void *data, uint16_t length)
 {
-    struct usbd_cdc_terminal__context *context = arg;
+    struct usbd_cdc_terminal__state *context = arg;
 
     if (length >= CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE) {
         return;
@@ -62,9 +68,19 @@ void usbd_cdc_terminal__init(void)
 {
     static const struct app_usbd_cdc__context usbd_cdc_context = {
         .receive = usb_receive,
-        .arg = &g__context};
-    g__context.terminal = &g__terminal;
+        .arg = &g__state};
+    g__state.terminal = &g__terminal;
+    terminal__init(&g__terminal,
+                   &g__terminal_commands[0],
+                   sizeof(g__terminal_commands),
+                   &g_terminal_buffer[0],
+                   sizeof(g_terminal_buffer));
     app_usbd_cdc__init(&usbd_cdc_context);
+}
+
+void usbd_cdc_terminal__set_terminal_context(void *terminal_context)
+{
+    terminal__set_terminal_context(g__state.terminal, terminal_context);
 }
 
 void usbd_cdc_terminal__loop(void)
@@ -75,7 +91,7 @@ void usbd_cdc_terminal__loop(void)
         STATE_RETRY_TRANSMIT
     } sm_state = STATE_PROCESS;
     static const char *response;
-    struct usbd_cdc_terminal__context *context = &g__context;
+    struct usbd_cdc_terminal__state *context = &g__state;
 
     switch (sm_state) {
     case STATE_PROCESS:

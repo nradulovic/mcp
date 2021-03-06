@@ -21,14 +21,30 @@
 #include "main.h"
 
 #include "usbd_cdc_terminal.h"
+#include "mdrv.h"
 
 TIM_HandleTypeDef htim10;
 
-
 void SystemClock_Config(void);
+
+static void pin_init_output(void *context);
+static void pin_init_input(void *context);
+static void pin_write(void *context, bool value);
+static bool pin_read(void *context);
+static void tim_start(void *context);
+static void tim_stop(void *context);
 static void MX_GPIO_Init(void);
 static void MX_TIM10_Init(void);
 
+static const struct mdrv__ll mdrv__ll = {
+    .pin_init_input = pin_init_input,
+    .pin_init_output = pin_init_output,
+    .pin_write = pin_write,
+    .pin_read = pin_read,
+    .tim_start = tim_start,
+    .tim_stop = tim_stop, };
+
+static struct mdrv__context mdrv__context;
 
 /**
  * @brief  The application entry point.
@@ -48,7 +64,9 @@ int main(void)
     MX_GPIO_Init();
     MX_TIM10_Init();
 
+    mdrv__init(&mdrv__context, &mdrv__ll, NULL);
     usbd_cdc_terminal__init();
+    usbd_cdc_terminal__set_terminal_context(&mdrv__context);
 
     /* Infinite loop */
     while (1) {
@@ -62,8 +80,10 @@ int main(void)
  */
 void SystemClock_Config(void)
 {
-    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = {
+        0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {
+        0};
 
     /** Configure the main internal regulator output voltage
      */
@@ -134,7 +154,8 @@ static void MX_TIM10_Init(void)
  */
 static void MX_GPIO_Init(void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitTypeDef GPIO_InitStruct = {
+        0};
 
     /* GPIO Ports Clock Enable */
     __HAL_RCC_GPIOH_CLK_ENABLE();
@@ -143,7 +164,7 @@ static void MX_GPIO_Init(void)
 
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(GPIOD,
-                      MCP_DATA_Pin | MCP_DEBUG_Pin | MCP_AUX0_Pin | MCP_STATUS_Pin | MCP_ERROR_Pin,
+    MCP_DATA_Pin | MCP_DEBUG_Pin | MCP_AUX0_Pin | MCP_STATUS_Pin | MCP_ERROR_Pin,
                       GPIO_PIN_RESET);
 
     /*Configure GPIO pin : MCP_DATA_Pin */
@@ -157,14 +178,72 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pin = MCP_DEBUG_Pin | MCP_AUX0_Pin | MCP_STATUS_Pin | MCP_ERROR_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+}
+
+static void pin_init_output(void *context)
+{
+    (void) context;
+    GPIO_InitTypeDef GPIO_InitStruct = {
+        0};
+    /*Configure GPIO pins : MCP_DEBUG_Pin MCP_AUX0_Pin MCP_STATUS_Pin MCP_ERROR_Pin */
+    GPIO_InitStruct.Pin = MCP_DEBUG_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(MCP_DEBUG_GPIO_Port, &GPIO_InitStruct);
+}
+
+static void pin_init_input(void *context)
+{
+    (void) context;
+    GPIO_InitTypeDef GPIO_InitStruct = {
+        0};
+    /*Configure GPIO pins : MCP_DEBUG_Pin MCP_AUX0_Pin MCP_STATUS_Pin MCP_ERROR_Pin */
+    GPIO_InitStruct.Pin = MCP_DEBUG_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(MCP_DEBUG_GPIO_Port, &GPIO_InitStruct);
+}
+
+static void pin_write(void *context, bool state)
+{
+    (void) context;
+    HAL_GPIO_WritePin(MCP_DEBUG_GPIO_Port, MCP_DEBUG_Pin, state ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+static bool pin_read(void *context)
+{
+    (void) context;
+    GPIO_PinState state = HAL_GPIO_ReadPin(MCP_DEBUG_GPIO_Port, MCP_DEBUG_Pin);
+    return state == GPIO_PIN_SET ? true : false;
+}
+
+static void tim_start(void *context)
+{
+    (void) context;
+    HAL_TIM_Base_Start_IT(&htim10);
+}
+
+static void tim_stop(void *context)
+{
+    (void) context;
+    HAL_TIM_Base_Stop_IT(&htim10);
 }
 
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim == &htim10) {
+        mdrv__it(&mdrv__context);
+    }
+}
 
 /**
  * @brief  This function is executed in case of error occurrence.

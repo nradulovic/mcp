@@ -48,11 +48,11 @@ static int copy_to_buffer(struct terminal_descriptor *terminal,
                           size_t input_length)
 {
     size_t copy_left;
-    size_t free_space = terminal->command_arg_size - terminal->p__content_index;
+    size_t free_space = terminal->p__arg_size - terminal->p__content_index;
 
     copy_left = str__ncopy(input,
                            input_length,
-                           &terminal->command_arg_buffer[terminal->p__content_index],
+                           &terminal->p__arg_buffer[terminal->p__content_index],
                            free_space);
     if (copy_left != 0) {
         return -1;
@@ -65,14 +65,14 @@ static int command_is_complete(const struct terminal_descriptor *terminal, size_
 {
     bool status;
 
-    status = str__find_character(terminal->command_arg_buffer, '\r', cursor_index);
+    status = str__find_character(terminal->p__arg_buffer, '\r', cursor_index);
 
     if (status == true) {
         (*cursor_index)++;
         return true;
     }
 
-    status = str__find_character(terminal->command_arg_buffer, '\n', cursor_index);
+    status = str__find_character(terminal->p__arg_buffer, '\n', cursor_index);
 
     if (status == true) {
         (*cursor_index)++;
@@ -83,7 +83,7 @@ static int command_is_complete(const struct terminal_descriptor *terminal, size_
 static int tokenize(const struct terminal_descriptor *terminal, size_t cursor_index)
 {
     for (size_t i = 0; i < cursor_index; i++) {
-        char *current = &terminal->command_arg_buffer[i];
+        char *current = &terminal->p__arg_buffer[i];
 
         if (*current == ' ') {
             *current = '\0';
@@ -113,7 +113,7 @@ static int parse(const struct terminal_descriptor *terminal,
     *arg_count = 0;
 
     for (size_t i = 0; i < cursor_index; i++) {
-        const char *character = &terminal->command_arg_buffer[i];
+        const char *character = &terminal->p__arg_buffer[i];
 
         switch (sm_state) {
         case STATE_NULL:
@@ -138,14 +138,14 @@ static int parse(const struct terminal_descriptor *terminal,
     return 0;
 }
 
-static const struct terminal__command_descriptor* find_command(const struct terminal_descriptor *terminal,
-                                                               const char *command)
+static const struct terminal__command_descriptor*
+find_command(const struct terminal_descriptor *terminal, const char *command)
 {
-    for (size_t i = 0; i < terminal->no_commands; i++) {
-        const char *command_id = terminal->commands[i].command_id;
+    for (size_t i = 0; i < terminal->p__no_commands; i++) {
+        const char *command_id = terminal->p__commands[i].command_id;
 
         if (str__equal(command, command_id)) {
-            return &terminal->commands[i];
+            return &terminal->p__commands[i];
         }
     }
     return NULL;
@@ -167,15 +167,31 @@ static const char* process_command(struct terminal_descriptor *terminal, size_t 
     if (error) {
         return terminal->error_message;
     }
+    if (arg_count == 0) {
+        return &terminal->p__arg_buffer[terminal->p__content_index - 1u];;
+    }
     command = find_command(terminal, arg_value[0]);
 
     if (command == NULL) {
         return terminal->error_message;
     }
-    return command->interpreter.fn(terminal->terminal_context,
+    return command->interpreter.fn(terminal->p__terminal_context,
                                    command->interpreter.command_context,
                                    arg_count,
                                    arg_value);
+}
+
+void terminal__init(struct terminal_descriptor *terminal,
+                    const struct terminal__command_descriptor *commands,
+                    size_t commands_size,
+                    char *command_arg_buffer,
+                    size_t command_arg_size)
+{
+    terminal->p__commands = commands;
+    terminal->p__no_commands = commands_size / sizeof(struct terminal__command_descriptor);
+    terminal->p__arg_buffer = command_arg_buffer;
+    terminal->p__arg_size = command_arg_size;
+    terminal->p__content_index = 0;
 }
 
 const char* terminal__interpret(struct terminal_descriptor *terminal,
@@ -192,15 +208,15 @@ const char* terminal__interpret(struct terminal_descriptor *terminal,
     }
     if (command_is_complete(terminal, &cursor_index)) {
         response = process_command(terminal, cursor_index);
-        memmove(terminal->command_arg_buffer,
-                &terminal->command_arg_buffer[cursor_index],
+        memmove(terminal->p__arg_buffer,
+                &terminal->p__arg_buffer[cursor_index],
                 terminal->p__content_index - cursor_index);
         terminal->p__content_index -= cursor_index;
-        memset(&terminal->command_arg_buffer[cursor_index],
+        memset(&terminal->p__arg_buffer[cursor_index],
                0,
-               terminal->command_arg_size - terminal->p__content_index);
+               terminal->p__arg_size - terminal->p__content_index);
     } else {
-        response = &terminal->command_arg_buffer[terminal->p__content_index - 1u];
+        response = &terminal->p__arg_buffer[terminal->p__content_index - 1u];
     }
     return response;
 }
@@ -208,5 +224,10 @@ const char* terminal__interpret(struct terminal_descriptor *terminal,
 void terminal__discard_command(struct terminal_descriptor *terminal)
 {
     terminal->p__content_index = 0;
-    memset(&terminal->command_arg_buffer, 0, terminal->command_arg_size);
+    memset(&terminal->p__arg_buffer, 0, terminal->p__arg_size);
+}
+
+void terminal__set_terminal_context(struct terminal_descriptor *terminal, void *terminal_context)
+{
+    terminal->p__terminal_context = terminal_context;
 }
