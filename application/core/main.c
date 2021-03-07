@@ -23,47 +23,38 @@
 #include "usbd_cdc_terminal.h"
 #include "mdrv.h"
 
-TIM_HandleTypeDef htim10;
+TIM_HandleTypeDef g__mdrv__time_base;
 
-void SystemClock_Config(void);
-
-static void pin_init_output(void *context);
+static void system_clock_init(void);
+static void gpio_init(void);
+static void pin_init_output(void *context, bool value);
 static void pin_init_input(void *context);
 static void pin_write(void *context, bool value);
 static bool pin_read(void *context);
-static void tim_start(void *context);
-static void tim_stop(void *context);
-static void MX_GPIO_Init(void);
-static void MX_TIM10_Init(void);
+static void mdrv__time_base__start(void *context, mdrv__time_us_t period);
+static void mdrv__time_base__stop(void *context);
 
 static const struct mdrv__ll mdrv__ll = {
     .pin_init_input = pin_init_input,
     .pin_init_output = pin_init_output,
     .pin_write = pin_write,
     .pin_read = pin_read,
-    .tim_start = tim_start,
-    .tim_stop = tim_stop, };
+    .tim_start = mdrv__time_base__start,
+    .tim_stop = mdrv__time_base__stop, };
 
 static struct mdrv__context mdrv__context;
 
-/**
- * @brief  The application entry point.
- * @retval int
- */
 int main(void)
 {
-    /* MCU Configuration--------------------------------------------------------*/
-
     /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
     HAL_Init();
 
     /* Configure the system clock */
-    SystemClock_Config();
+    system_clock_init();
+    SystemCoreClockUpdate();
 
     /* Initialize all configured peripherals */
-    MX_GPIO_Init();
-    MX_TIM10_Init();
-
+    gpio_init();
     mdrv__init(&mdrv__context, &mdrv__ll, NULL);
     usbd_cdc_terminal__init();
     usbd_cdc_terminal__set_terminal_context(&mdrv__context);
@@ -74,11 +65,7 @@ int main(void)
     }
 }
 
-/**
- * @brief System Clock Configuration
- * @retval None
- */
-void SystemClock_Config(void)
+void system_clock_init(void)
 {
     RCC_OscInitTypeDef RCC_OscInitStruct = {
         0};
@@ -89,7 +76,8 @@ void SystemClock_Config(void)
      */
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-    /** Initializes the RCC Oscillators according to the specified parameters
+    /**
+     * Initializes the RCC Oscillators according to the specified parameters
      * in the RCC_OscInitTypeDef structure.
      */
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
@@ -117,146 +105,100 @@ void SystemClock_Config(void)
     }
 }
 
-/**
- * @brief TIM10 Initialization Function
- * @param None
- * @retval None
- */
-static void MX_TIM10_Init(void)
+static void gpio_init(void)
 {
-
-    /* USER CODE BEGIN TIM10_Init 0 */
-
-    /* USER CODE END TIM10_Init 0 */
-
-    /* USER CODE BEGIN TIM10_Init 1 */
-
-    /* USER CODE END TIM10_Init 1 */
-    htim10.Instance = TIM10;
-    htim10.Init.Prescaler = 0;
-    htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim10.Init.Period = 65535;
-    htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_Base_Init(&htim10) != HAL_OK) {
-        Error_Handler();
-    }
-    /* USER CODE BEGIN TIM10_Init 2 */
-
-    /* USER CODE END TIM10_Init 2 */
-
-}
-
-/**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void)
-{
-    GPIO_InitTypeDef GPIO_InitStruct = {
+    GPIO_InitTypeDef gpio_init_struct = {
         0};
 
-    /* GPIO Ports Clock Enable */
-    __HAL_RCC_GPIOH_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /* Initialize DATA pin */
+    MCP_DATA_CLK_ENABLE();
+    gpio_init_struct.Pin = MCP_DATA_PIN;
+    gpio_init_struct.Mode = GPIO_MODE_INPUT;
+    gpio_init_struct.Pull = GPIO_NOPULL;
+    gpio_init_struct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    gpio_init_struct.Alternate = 0;
+    HAL_GPIO_Init(MCP_DATA_GPIO_PORT, &gpio_init_struct);
 
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOD,
-    MCP_DATA_Pin | MCP_DEBUG_Pin | MCP_AUX0_Pin | MCP_STATUS_Pin | MCP_ERROR_Pin,
-                      GPIO_PIN_RESET);
+    /* Initialize STATUS pin */
+    MCP_STATUS_CLK_ENABLE();
+    gpio_init_struct.Pin = MCP_STATUS_PIN;
+    gpio_init_struct.Mode = GPIO_MODE_OUTPUT_PP;
+    gpio_init_struct.Pull = GPIO_NOPULL;
+    gpio_init_struct.Speed = GPIO_SPEED_FREQ_LOW;
+    gpio_init_struct.Alternate = 0;
+    HAL_GPIO_Init(MCP_STATUS_GPIO_PORT, &gpio_init_struct);
 
-    /*Configure GPIO pin : MCP_DATA_Pin */
-    GPIO_InitStruct.Pin = MCP_DATA_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-    HAL_GPIO_Init(MCP_DATA_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : MCP_DEBUG_Pin MCP_AUX0_Pin MCP_STATUS_Pin MCP_ERROR_Pin */
-    GPIO_InitStruct.Pin = MCP_DEBUG_Pin | MCP_AUX0_Pin | MCP_STATUS_Pin | MCP_ERROR_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
+    /* Initialize ERROR pin */
+    MCP_ERROR_CLK_ENABLE();
+    gpio_init_struct.Pin = MCP_ERROR_PIN;
+    gpio_init_struct.Mode = GPIO_MODE_OUTPUT_PP;
+    gpio_init_struct.Pull = GPIO_NOPULL;
+    gpio_init_struct.Speed = GPIO_SPEED_FREQ_LOW;
+    gpio_init_struct.Alternate = 0;
+    HAL_GPIO_Init(MCP_ERROR_GPIO_PORT, &gpio_init_struct);
 }
 
-static void pin_init_output(void *context)
+static void pin_init_output(void *context, bool value)
 {
     (void) context;
-    GPIO_InitTypeDef GPIO_InitStruct = {
-        0};
-    /*Configure GPIO pins : MCP_DEBUG_Pin MCP_AUX0_Pin MCP_STATUS_Pin MCP_ERROR_Pin */
-    GPIO_InitStruct.Pin = MCP_DEBUG_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(MCP_DEBUG_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, value ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_ChangeMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN_NO, GPIO__MODE__OUTPUT_PP);
 }
 
 static void pin_init_input(void *context)
 {
     (void) context;
-    GPIO_InitTypeDef GPIO_InitStruct = {
-        0};
-    /*Configure GPIO pins : MCP_DEBUG_Pin MCP_AUX0_Pin MCP_STATUS_Pin MCP_ERROR_Pin */
-    GPIO_InitStruct.Pin = MCP_DEBUG_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(MCP_DEBUG_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_ChangeMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN_NO, GPIO__MODE__INPUT);
 }
 
 static void pin_write(void *context, bool state)
 {
     (void) context;
-    HAL_GPIO_WritePin(MCP_DEBUG_GPIO_Port, MCP_DEBUG_Pin, state ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, state ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
 static bool pin_read(void *context)
 {
     (void) context;
-    GPIO_PinState state = HAL_GPIO_ReadPin(MCP_DEBUG_GPIO_Port, MCP_DEBUG_Pin);
+    GPIO_PinState state = HAL_GPIO_ReadPin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN);
     return state == GPIO_PIN_SET ? true : false;
 }
 
-static void tim_start(void *context)
+static void mdrv__time_base__start(void *context, mdrv__time_us_t period)
 {
     (void) context;
-    HAL_TIM_Base_Start_IT(&htim10);
+
+    g__mdrv__time_base.Instance = TIM10;
+    g__mdrv__time_base.Init.Prescaler = (uint32_t) ((SystemCoreClock / 1000000) - 1);
+    g__mdrv__time_base.Init.CounterMode = TIM_COUNTERMODE_UP;
+    g__mdrv__time_base.Init.Period = period - 1u;
+    g__mdrv__time_base.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    g__mdrv__time_base.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    if (HAL_TIM_Base_Init(&g__mdrv__time_base) != HAL_OK) {
+        Error_Handler();
+    }
+    HAL_TIM_Base_Start_IT(&g__mdrv__time_base);
 }
 
-static void tim_stop(void *context)
+static void mdrv__time_base__stop(void *context)
 {
     (void) context;
-    HAL_TIM_Base_Stop_IT(&htim10);
+    HAL_TIM_Base_Stop_IT(&g__mdrv__time_base);
+    HAL_TIM_Base_DeInit(&g__mdrv__time_base);
 }
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim == &htim10) {
+    if (htim->Instance == TIM10) {
         mdrv__it(&mdrv__context);
     }
 }
 
-/**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
 void Error_Handler(void)
 {
-    /* USER CODE BEGIN Error_Handler_Debug */
-    /* User can add his own implementation to report the HAL error return state */
     __disable_irq();
     while (1) {
     }
-    /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT

@@ -1,25 +1,4 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.h
-  * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MAIN_H
 #define __MAIN_H
 
@@ -27,55 +6,27 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+#define MCP_DATA_PIN                GPIO_PIN_2
+#define MCP_DATA_PIN_NO             2
+#define MCP_DATA_GPIO_PORT          GPIOA
+#define MCP_DATA_CLK_ENABLE()       __HAL_RCC_GPIOA_CLK_ENABLE()
 
-/* USER CODE END Includes */
+#define MCP_STATUS_PIN              GPIO_PIN_12
+#define MCP_STATUS_GPIO_PORT        GPIOD
+#define MCP_STATUS_CLK_ENABLE()     __HAL_RCC_GPIOD_CLK_ENABLE()
 
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
+#define MCP_ERROR_PIN               GPIO_PIN_13
+#define MCP_ERROR_GPIO_PORT         GPIOD
+#define MCP_ERROR_CLK_ENABLE()      __HAL_RCC_GPIOD_CLK_ENABLE()
 
-/* USER CODE END ET */
+extern TIM_HandleTypeDef g__mdrv__time_base;
 
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
-
-/* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
-
-/* Private defines -----------------------------------------------------------*/
-#define MCP_DATA_Pin GPIO_PIN_9
-#define MCP_DATA_GPIO_Port GPIOD
-#define MCP_DEBUG_Pin GPIO_PIN_10
-#define MCP_DEBUG_GPIO_Port GPIOD
-#define MCP_AUX0_Pin GPIO_PIN_11
-#define MCP_AUX0_GPIO_Port GPIOD
-#define MCP_STATUS_Pin GPIO_PIN_12
-#define MCP_STATUS_GPIO_Port GPIOD
-#define MCP_ERROR_Pin GPIO_PIN_13
-#define MCP_ERROR_GPIO_Port GPIOD
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
