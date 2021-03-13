@@ -21,7 +21,7 @@ extern "C" {
 #define MCP_ERROR_GPIO_PORT         GPIOD
 #define MCP_ERROR_CLK_ENABLE()      __HAL_RCC_GPIOD_CLK_ENABLE()
 
-extern TIM_HandleTypeDef g__mdrv__time_base;
+void mdrv__time_base__it(void);
 
 void Error_Handler(void);
 

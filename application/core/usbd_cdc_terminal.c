@@ -15,6 +15,7 @@
 #include "mdrv.h"
 #include "command_help.h"
 #include "command_write.h"
+#include "command_rxchg.h"
 
 struct usbd_cdc_terminal__state
 {
@@ -39,7 +40,11 @@ static const struct terminal__command_descriptor g__terminal_commands[] = {
     {
         .command_id = "write",
         .interpreter = {
-            .fn = command_write__fn, }}};
+            .fn = command_write__fn, }},
+    {
+        .command_id = "rxchg",
+        .interpreter = {
+            .fn = command_rxchg__fn, }}};
 
 static struct terminal_descriptor g__terminal = {
     .p__arg_buffer = &g_terminal_buffer[0],

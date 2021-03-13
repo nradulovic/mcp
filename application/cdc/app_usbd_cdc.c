@@ -8,7 +8,7 @@
 #include "app_usbd_cdc__desc.h"
 #include "config_usbd_cdc.h"
 
-#include "main.h"
+#include "error_handler.h"
 
 #include "usbd_cdc.h"
 #include "usbd_def.h"
@@ -176,16 +176,16 @@ void app_usbd_cdc__init(const struct app_usbd_cdc__context * context)
     g_context = context;
     /* Init Device Library, add supported class and start the library. */
     if (USBD_Init(&handle, &usbd_cdc__desc__fs_desc, USBD_CONF__DEV_MODE__FULL_SPEED) != USBD_OK) {
-        Error_Handler();
+        error_handler__handle();
     }
     if (USBD_RegisterClass(&handle, &USBD_CDC) != USBD_OK) {
-        Error_Handler();
+        error_handler__handle();
     }
     if (USBD_CDC_RegisterInterface(&handle, &app_usbd_cdc_if__fops) != USBD_OK) {
-        Error_Handler();
+        error_handler__handle();
     }
     if (USBD_Start(&handle) != USBD_OK) {
-        Error_Handler();
+        error_handler__handle();
     }
 }
 

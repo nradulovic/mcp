@@ -42,13 +42,13 @@ const char* command_write__fn(void *terminal_context,
     write_data_length = strlen(write_data);
 
     if (write_data_length >= CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE) {
-        static const char *error = "\n\rE0201: Argument <value> length is too big.\n\r"
+        static const char *error = "\n\rE0201: Argument <data> length is too big.\n\r"
             "Maximum argument length is " STRINGIZE(CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE)
         " characters\n\r";
         return error;
     }
     if (write_data_length & 0x1u) {
-        static const char *error = "\n\rE0202: Invalid syntax in argument <value>.\n\r"
+        static const char *error = "\n\rE0202: Invalid syntax in argument <data>.\n\r"
             "Use HEX notation and 2 values per byte.\n\r";
         return error;
     }
@@ -63,7 +63,7 @@ const char* command_write__fn(void *terminal_context,
             return error;
         } else if (input > (long int)(write_data_length * 8u)) {
             static const char *error =
-                "\n\rE0207: Value of argument <bit_length> is bigger than <value> length.\n\r";
+                "\n\rE0207: Value of argument <bit_length> is bigger than <data> bit length.\n\r";
             return error;
         }
         write_data_bit_length = (size_t) input;
@@ -73,7 +73,7 @@ const char* command_write__fn(void *terminal_context,
     size_t raw_data_length = hexador__to_bin(write_data, raw_data);
 
     if (raw_data_length != (write_data_length / 2u)) {
-        return "\n\rE0203: Invalid values in argument <value>.\n\r";
+        return "\n\rE0203: Invalid values in argument <data>.\n\r";
     }
     if (mdrv__write(mdrv__context, raw_data, write_data_bit_length)) {
         return "\n\rE0204: Error while executing driver write command.\n\r";
