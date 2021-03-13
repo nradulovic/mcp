@@ -33,6 +33,7 @@ typedef uint32_t mdrv__time_us_t;
 
 typedef void (pin_init_input_fn)(void*);
 typedef void (pin_init_output_fn)(void*, bool);
+typedef void (pin_init_trigger_fn)(void*);
 typedef void (pin_write_fn)(void*, bool);
 typedef bool (pin_read_fn)(void*);
 typedef void (tim_start_fn)(void*, mdrv__time_us_t);
@@ -43,6 +44,7 @@ struct mdrv__ll
 {
     pin_init_input_fn *pin_init_input;
     pin_init_output_fn *pin_init_output;
+    pin_init_trigger_fn *pin_init_trigger;
     pin_write_fn *pin_write;
     pin_read_fn *pin_read;
     tim_start_fn *tim_start;

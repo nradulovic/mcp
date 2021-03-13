@@ -219,6 +219,7 @@ void mdrv__it(struct mdrv__context *context)
     case MDRV__STATE__PRE_RX:
         HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
         context->p__ll.tim_stop(context->p__ll_context);
+        context->p__ll.pin_init_trigger(context->p__ll_context);
         context->p__ll.tim_start_on_trigger(context->p__ll_context,
                                             context->p__config->quarter_period_us);
         context->p__index = 0u;

@@ -49,8 +49,6 @@ void mdrv__time_base__start(void *context, uint32_t period)
 void mdrv__time_base__start_on_trigger(void *context, uint32_t period)
 {
     (void) context;
-    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_ALTERNATE);
-    LL_GPIO_SetAFPin_0_7(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_AF_3);
     LL_TIM_DisableCounter(MDRV_TIME_BASE_CONFIG__TIM);
     LL_TIM_SetAutoReload(MDRV_TIME_BASE_CONFIG__TIM, period - 1u);
     LL_TIM_GenerateEvent_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
@@ -69,8 +67,7 @@ void mdrv__time_base__start_on_trigger(void *context, uint32_t period)
 void mdrv__time_base__stop(void *context)
 {
     (void) context;
-    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE)
-    LL_TIM_CC_DisableChannel(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_CHANNEL_CH1);
+    LL_TIM_SetSlaveMode(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_SLAVEMODE_DISABLED);
     LL_TIM_DisableCounter(MDRV_TIME_BASE_CONFIG__TIM);
     LL_TIM_DisableIT_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
     LL_TIM_GenerateEvent_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);

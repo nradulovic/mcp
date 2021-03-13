@@ -10,12 +10,14 @@ static void system_clock_init(void);
 static void gpio_init(void);
 static void pin_init_output(void *context, bool value);
 static void pin_init_input(void *context);
+static void pin_init_trigger(void *context);
 static void pin_write(void *context, bool value);
 static bool pin_read(void *context);
 
 static const struct mdrv__ll mdrv__ll = {
     .pin_init_input = pin_init_input,
     .pin_init_output = pin_init_output,
+    .pin_init_trigger = pin_init_trigger,
     .pin_write = pin_write,
     .pin_read = pin_read,
     .tim_start = mdrv__time_base__start,
@@ -121,6 +123,18 @@ static void pin_init_input(void *context)
 {
     (void) context;
     LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_INPUT);
+}
+
+static void pin_init_trigger(void *context)
+{
+    (void) context;
+    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_ALTERNATE);
+
+    if (MCP_DATA_PIN < LL_GPIO_PIN_8) {
+        LL_GPIO_SetAFPin_0_7(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, MCP_DATA_TRIGGER_AF);
+    } else {
+        LL_GPIO_SetAFPin_8_15(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, MCP_DATA_TRIGGER_AF);
+    }
 }
 
 static void pin_write(void *context, bool state)
