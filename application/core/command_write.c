@@ -1,5 +1,5 @@
 /*
- * command_help.c
+ * command_write.c
  *
  *  Created on: Mar 1, 2021
  *      Author: nenad
@@ -23,10 +23,11 @@ const char* command_write__fn(void *terminal_context,
                               const char *arg_value[])
 {
     struct mdrv__context *mdrv__context = terminal_context;
-    const char *write_data = arg_value[1];
-    uint8_t raw_data[RAW_DATA_SIZE];
-    size_t write_data_length;
-    size_t write_data_bit_length;
+    const char *arg_data = arg_value[1];
+    const char *arg_bit_length = arg_value[2];
+    uint8_t write_data[RAW_DATA_SIZE];
+    size_t arg_data_bits;
+    size_t write_data_bits;
 
     (void) command_context;
 
@@ -39,21 +40,16 @@ const char* command_write__fn(void *terminal_context,
             "  bit_length - Number of bits to actually write in DEC notation.\n\r";
         return help;
     }
-    write_data_length = strlen(write_data);
+    arg_data_bits = strlen(arg_data) * 4u;
 
-    if (write_data_length >= CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE) {
-        static const char *error = "\n\rE0201: Argument <value> length is too big.\n\r"
-            "Maximum argument length is " STRINGIZE(CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE)
-        " characters\n\r";
-        return error;
-    }
-    if (write_data_length & 0x1u) {
-        static const char *error = "\n\rE0202: Invalid syntax in argument <value>.\n\r"
+    /* This check is required by hexador to bin */
+    if ((arg_data_bits % 8u) != 0u) {
+        static const char *error = "\n\rE0202: Invalid syntax in argument <data>.\n\r"
             "Use HEX notation and 2 values per byte.\n\r";
         return error;
     }
     if (arg_count == 3) {
-        long int input = strtol(arg_value[2], NULL, 10);
+        long int input = strtol(arg_bit_length, NULL, 10);
         if (input == 0) {
             static const char *error = "\n\rE0205: Zero value of argument <bit_length>.\n\r";
             return error;
@@ -61,21 +57,21 @@ const char* command_write__fn(void *terminal_context,
             static const char *error =
                 "\n\rE0206: Value of argument <bit_length> is out of range.\n\r";
             return error;
-        } else if (input > (long int)(write_data_length * 8u)) {
+        } else if (input > (long int)arg_data_bits) {
             static const char *error =
-                "\n\rE0207: Value of argument <bit_length> is bigger than <value> length.\n\r";
+                "\n\rE0207: Value of argument <bit_length> is bigger than <data> bit length.\n\r";
             return error;
         }
-        write_data_bit_length = (size_t) input;
+        write_data_bits = (size_t) input;
     } else {
-        write_data_bit_length = write_data_length * 8u;
+        write_data_bits = arg_data_bits;
     }
-    size_t raw_data_length = hexador__to_bin(write_data, raw_data);
+    size_t raw_data_bytes = hexador__to_bin(arg_data, write_data);
 
-    if (raw_data_length != (write_data_length / 2u)) {
-        return "\n\rE0203: Invalid values in argument <value>.\n\r";
+    if (raw_data_bytes != (arg_data_bits / 8u)) {
+        return "\n\rE0203: Invalid values in argument <data>.\n\r";
     }
-    if (mdrv__write(mdrv__context, raw_data, write_data_bit_length)) {
+    if (mdrv__write(mdrv__context, write_data, write_data_bits)) {
         return "\n\rE0204: Error while executing driver write command.\n\r";
     }
 

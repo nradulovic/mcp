@@ -16,6 +16,6 @@
  * @pre Source and destionantion must be non-null pointers
  */
 size_t hexador__to_bin(const char * source, uint8_t * destination);
-
+size_t hexador__to_hex(const uint8_t * source, size_t source_size, char * destination);
 
 #endif /* HEXADOR_H_ */

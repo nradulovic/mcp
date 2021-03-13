@@ -15,6 +15,9 @@
 #include "mdrv.h"
 #include "command_help.h"
 #include "command_write.h"
+#include "command_rxchg.h"
+#include "command_set.h"
+#include "command_get.h"
 
 struct usbd_cdc_terminal__state
 {
@@ -39,7 +42,19 @@ static const struct terminal__command_descriptor g__terminal_commands[] = {
     {
         .command_id = "write",
         .interpreter = {
-            .fn = command_write__fn, }}};
+            .fn = command_write__fn, }},
+    {
+        .command_id = "rxchg",
+        .interpreter = {
+            .fn = command_rxchg__fn, }},
+    {
+        .command_id = "set",
+        .interpreter = {
+            .fn = command_set__fn, }},
+    {
+        .command_id = "get",
+        .interpreter = {
+            .fn = command_get__fn, }}};
 
 static struct terminal_descriptor g__terminal = {
     .p__arg_buffer = &g_terminal_buffer[0],
@@ -96,6 +111,7 @@ void usbd_cdc_terminal__loop(void)
     switch (sm_state) {
     case STATE_PROCESS:
         if (context->usb_input.is_pending) {
+
             response = terminal__interpret(context->terminal,
                                            &context->usb_input.data[0],
                                            context->usb_input.data_size);

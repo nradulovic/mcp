@@ -6,7 +6,7 @@
 #include "stm32f4xx_hal.h"
 #include "usbd_core.h"
 #include "usbd_def.h"
-#include "main.h"
+#include "error_handler.h"
 
 /* MSP Init */
 
@@ -138,7 +138,7 @@ void HAL_PCD_ResetCallback(PCD_HandleTypeDef *hpcd)
     USBD_SpeedTypeDef speed = USBD_SPEED_FULL;
 
     if (hpcd->Init.speed != PCD_SPEED_FULL) {
-        Error_Handler();
+        error_handler__handle();
     }
     /* Set Speed. */
     USBD_LL_SetSpeed((USBD_HandleTypeDef*) hpcd->pData, speed);

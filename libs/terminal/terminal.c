@@ -207,12 +207,14 @@ const char* terminal__interpret(struct terminal_descriptor *terminal,
         return terminal->error_message;
     }
     if (command_is_complete(terminal, &cursor_index)) {
+        size_t leftover;
         response = process_command(terminal, cursor_index);
-        memmove(terminal->p__arg_buffer,
-                &terminal->p__arg_buffer[cursor_index],
-                terminal->p__content_index - cursor_index);
-        terminal->p__content_index -= cursor_index;
-        memset(&terminal->p__arg_buffer[cursor_index],
+        leftover = terminal->p__content_index - cursor_index;
+        if (leftover) {
+            memmove(terminal->p__arg_buffer, &terminal->p__arg_buffer[cursor_index], leftover);
+        }
+        terminal->p__content_index = leftover;
+        memset(&terminal->p__arg_buffer[terminal->p__content_index],
                0,
                terminal->p__arg_size - terminal->p__content_index);
     } else {

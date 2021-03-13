@@ -1,46 +1,28 @@
-/* USER CODE BEGIN Header */
-/**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
- * All rights reserved.</center></h2>
- *
- * This software component is licensed by ST under BSD 3-Clause license,
- * the "License"; You may not use this file except in compliance with the
- * License. You may obtain a copy of the License at:
- *                        opensource.org/licenses/BSD-3-Clause
- *
- ******************************************************************************
- */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 #include "usbd_cdc_terminal.h"
 #include "mdrv.h"
-
-TIM_HandleTypeDef g__mdrv__time_base;
+#include "error_handler.h"
+#include "mdrv_time_base.h"
+#include "stm32f4xx_ll_gpio.h"
 
 static void system_clock_init(void);
 static void gpio_init(void);
 static void pin_init_output(void *context, bool value);
 static void pin_init_input(void *context);
+static void pin_init_trigger(void *context);
 static void pin_write(void *context, bool value);
 static bool pin_read(void *context);
-static void mdrv__time_base__start(void *context, mdrv__time_us_t period);
-static void mdrv__time_base__stop(void *context);
 
 static const struct mdrv__ll mdrv__ll = {
     .pin_init_input = pin_init_input,
     .pin_init_output = pin_init_output,
+    .pin_init_trigger = pin_init_trigger,
     .pin_write = pin_write,
     .pin_read = pin_read,
     .tim_start = mdrv__time_base__start,
-    .tim_stop = mdrv__time_base__stop, };
+    .tim_stop = mdrv__time_base__stop,
+    .tim_start_on_trigger = mdrv__time_base__start_on_trigger};
 
 static struct mdrv__context mdrv__context;
 
@@ -51,10 +33,11 @@ int main(void)
 
     /* Configure the system clock */
     system_clock_init();
-    SystemCoreClockUpdate();
+    DBGMCU->APB2FZ |= (DBGMCU_APB2_FZ_DBG_TIM9_STOP);
 
     /* Initialize all configured peripherals */
     gpio_init();
+    mdrv__time_base__init(&mdrv__context);
     mdrv__init(&mdrv__context, &mdrv__ll, NULL);
     usbd_cdc_terminal__init();
     usbd_cdc_terminal__set_terminal_context(&mdrv__context);
@@ -89,7 +72,7 @@ void system_clock_init(void)
     RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
     RCC_OscInitStruct.PLL.PLLQ = 8;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-        Error_Handler();
+        error_handler__handle();
     }
     /** Initializes the CPU, AHB and APB buses clocks
      */
@@ -101,8 +84,9 @@ void system_clock_init(void)
     RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK) {
-        Error_Handler();
+        error_handler__handle();
     }
+    SystemCoreClockUpdate();
 }
 
 static void gpio_init(void)
@@ -127,95 +111,47 @@ static void gpio_init(void)
     gpio_init_struct.Speed = GPIO_SPEED_FREQ_LOW;
     gpio_init_struct.Alternate = 0;
     HAL_GPIO_Init(MCP_STATUS_GPIO_PORT, &gpio_init_struct);
-
-    /* Initialize ERROR pin */
-    MCP_ERROR_CLK_ENABLE();
-    gpio_init_struct.Pin = MCP_ERROR_PIN;
-    gpio_init_struct.Mode = GPIO_MODE_OUTPUT_PP;
-    gpio_init_struct.Pull = GPIO_NOPULL;
-    gpio_init_struct.Speed = GPIO_SPEED_FREQ_LOW;
-    gpio_init_struct.Alternate = 0;
-    HAL_GPIO_Init(MCP_ERROR_GPIO_PORT, &gpio_init_struct);
 }
 
 static void pin_init_output(void *context, bool value)
 {
-    (void) context;
-    HAL_GPIO_WritePin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, value ? GPIO_PIN_SET : GPIO_PIN_RESET);
-    HAL_GPIO_ChangeMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN_NO, GPIO__MODE__OUTPUT_PP);
+    pin_write(context, value);
+    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_OUTPUT);
 }
 
 static void pin_init_input(void *context)
 {
     (void) context;
-    HAL_GPIO_ChangeMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN_NO, GPIO__MODE__INPUT);
+    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_INPUT);
+}
+
+static void pin_init_trigger(void *context)
+{
+    (void) context;
+
+    GPIO_InitTypeDef input_pin = {
+          .Pin = GPIO_PIN_2,
+          .Mode = GPIO_MODE_AF_PP,
+          .Alternate = GPIO_AF3_TIM9,
+          .Pull = GPIO_NOPULL,
+          .Speed = GPIO_SPEED_FAST
+      };
+
+      HAL_GPIO_Init(GPIOA, &input_pin);
 }
 
 static void pin_write(void *context, bool state)
 {
     (void) context;
-    HAL_GPIO_WritePin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, state ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    if (state) {
+        LL_GPIO_SetOutputPin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN);
+    } else {
+        LL_GPIO_ResetOutputPin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN);
+    }
 }
 
 static bool pin_read(void *context)
 {
     (void) context;
-    GPIO_PinState state = HAL_GPIO_ReadPin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN);
-    return state == GPIO_PIN_SET ? true : false;
+    return LL_GPIO_ReadInputPort(MCP_DATA_GPIO_PORT) & MCP_DATA_PIN;
 }
-
-static void mdrv__time_base__start(void *context, mdrv__time_us_t period)
-{
-    (void) context;
-
-    g__mdrv__time_base.Instance = TIM10;
-    g__mdrv__time_base.Init.Prescaler = (uint32_t) ((SystemCoreClock / 1000000) - 1);
-    g__mdrv__time_base.Init.CounterMode = TIM_COUNTERMODE_UP;
-    g__mdrv__time_base.Init.Period = period - 1u;
-    g__mdrv__time_base.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    g__mdrv__time_base.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_Base_Init(&g__mdrv__time_base) != HAL_OK) {
-        Error_Handler();
-    }
-    HAL_TIM_Base_Start_IT(&g__mdrv__time_base);
-}
-
-static void mdrv__time_base__stop(void *context)
-{
-    (void) context;
-    HAL_TIM_Base_Stop_IT(&g__mdrv__time_base);
-    HAL_TIM_Base_DeInit(&g__mdrv__time_base);
-}
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim->Instance == TIM10) {
-        mdrv__it(&mdrv__context);
-    }
-}
-
-void Error_Handler(void)
-{
-    __disable_irq();
-    while (1) {
-    }
-}
-
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

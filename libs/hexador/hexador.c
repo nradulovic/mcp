@@ -73,6 +73,33 @@ static int hex_to_bin(char hex, uint8_t *bin)
     return -1;
 }
 
+static int bin_to_hex(uint8_t bin, char * hex)
+{
+    static uint8_t bin_map[16] = {
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        'a',
+        'b',
+        'c',
+        'd',
+        'e',
+        'f'
+    };
+    if (bin > 15) {
+        return -1;
+    }
+    *hex = bin_map[bin];
+    return 0;
+}
+
 size_t hexador__to_bin(const char *source, uint8_t *destination)
 {
 
@@ -81,10 +108,10 @@ size_t hexador__to_bin(const char *source, uint8_t *destination)
         STATE_HIGH,
         STATE_LOW
     } state;
-    size_t retval;
+    size_t converted;
     uint8_t hi_half;
 
-    retval = 0u;
+    converted = 0u;
     state = STATE_HIGH;
     while (*source) {
         int error;
@@ -94,7 +121,7 @@ size_t hexador__to_bin(const char *source, uint8_t *destination)
         case STATE_HIGH: {
             error = hex_to_bin(lower, &hi_half);
             if (error) {
-                return retval;
+                return converted;
             }
             state = STATE_LOW;
             break;
@@ -103,10 +130,10 @@ size_t hexador__to_bin(const char *source, uint8_t *destination)
             uint8_t lo_half;
             error = hex_to_bin(lower, &lo_half);
             if (error) {
-                return retval;
+                return converted;
             }
             *destination++ = (uint8_t)((hi_half << 4) | lo_half);
-            retval++;
+            converted++;
             state = STATE_HIGH;
             break;
         }
@@ -114,5 +141,31 @@ size_t hexador__to_bin(const char *source, uint8_t *destination)
             return 0u;
         }
     }
-    return retval;
+    return converted;
+}
+
+size_t hexador__to_hex(const uint8_t * source, size_t source_size, char * destination)
+{
+    size_t converted;
+
+    converted = 0u;
+    while (source_size) {
+        int error;
+        uint8_t msb_half = *source >> 4u;
+        uint8_t lsb_half = *source & 0xfu;
+        error = bin_to_hex(msb_half, destination);
+        if (error) {
+            break;
+        }
+        destination++;
+        error = bin_to_hex(lsb_half, destination);
+        if (error) {
+            break;
+        }
+        destination++;
+        source++;
+        converted++;
+        source_size--;
+    }
+    return converted;
 }
