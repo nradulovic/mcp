@@ -152,7 +152,7 @@ void mdrv__it(struct mdrv__context *context)
     switch (context->p__state) {
     case MDRV__STATE__IDLE:
         break;
-    case MDRV__STATE__PRE_TX: {
+    case MDRV__STATE__PRE_TX:
         switch (context->p__config->pre_tx_state) {
         case MDRV__CONFIG__PRE_TX__HIGH:
             context->p__ll.pin_init_output(context->p__ll_context, true);
@@ -169,15 +169,13 @@ void mdrv__it(struct mdrv__context *context)
         }
         context->p__state = MDRV__STATE__PRE_TX_COUNT;
         break;
-    }
-    case MDRV__STATE__PRE_TX_COUNT: {
+    case MDRV__STATE__PRE_TX_COUNT:
         context->p__period_count--;
         if (context->p__period_count == 0u) {
             context->p__state = MDRV__STATE__INIT_TX;
         }
         break;
-    }
-    case MDRV__STATE__INIT_TX: {
+    case MDRV__STATE__INIT_TX:
         /*
          * Write the first bit together with initialization. Since this is the first bit, we don't
          * need to check if we have reached end of transmission like we do in MDRV__STATE__TX
@@ -186,7 +184,6 @@ void mdrv__it(struct mdrv__context *context)
         context->p__index++;
         context->p__state = MDRV__STATE__TX_FHI;
         break;
-    }
     case MDRV__STATE__TX_FH:
         context->p__ll.pin_write(context->p__ll_context, fetch_bit(context->p__index));
         context->p__index++;
@@ -208,7 +205,7 @@ void mdrv__it(struct mdrv__context *context)
             context->p__state = MDRV__STATE__TX_FH;
         }
         break;
-    case MDRV__STATE__TX_COMPLETE: {
+    case MDRV__STATE__TX_COMPLETE:
         if (context->p__rd_size == 0u) {
             set_idle(context);
             context->p__ll.tim_stop(context->p__ll_context);
@@ -221,8 +218,12 @@ void mdrv__it(struct mdrv__context *context)
         break;
     case MDRV__STATE__PRE_RX:
         HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+        context->p__ll.tim_stop(context->p__ll_context);
+        context->p__ll.tim_start_on_trigger(context->p__ll_context,
+                                            context->p__config->quarter_period_us);
         context->p__index = 0u;
         context->p__state = MDRV__STATE__RX_FHI;
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
         break;
     case MDRV__STATE__RX_FHI:
         HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
@@ -249,7 +250,6 @@ void mdrv__it(struct mdrv__context *context)
             context->p__state = MDRV__STATE__RX_FHI;
         }
         break;
-    }
     default:
         break;
     }

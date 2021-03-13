@@ -37,6 +37,7 @@ typedef void (pin_write_fn)(void*, bool);
 typedef bool (pin_read_fn)(void*);
 typedef void (tim_start_fn)(void*, mdrv__time_us_t);
 typedef void (tim_stop_fn)(void*);
+typedef void (tim_start_on_trigger_fn)(void *, mdrv__time_us_t);
 
 struct mdrv__ll
 {
@@ -46,6 +47,7 @@ struct mdrv__ll
     pin_read_fn *pin_read;
     tim_start_fn *tim_start;
     tim_stop_fn *tim_stop;
+    tim_start_on_trigger_fn * tim_start_on_trigger;
 };
 
 struct mdrv__config;

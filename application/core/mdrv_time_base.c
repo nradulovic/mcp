@@ -7,6 +7,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_ll_tim.h"
+#include "config_mdrv_time_base.h"
 #include "mdrv.h"
 
 static struct mdrv__context *g__mdrv_context;
@@ -14,45 +15,72 @@ static struct mdrv__context *g__mdrv_context;
 void mdrv__time_base__init(struct mdrv__context *mdrv_context)
 {
     g__mdrv_context = mdrv_context;
-    __HAL_RCC_TIM5_CLK_ENABLE();
-    /* TIM5 interrupt Init */
-    HAL_NVIC_SetPriority(TIM5_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(TIM5_IRQn);
-    TIM5->CR1 = 0u;
-    TIM5->DIER = 0u;
-    TIM5->SR = 0u;
-    TIM5->EGR = 0u;
-    TIM5->CCMR1 = 0u;
-    TIM5->CCER = 0u;
-    TIM5->CNT = 0u;
-    TIM5->PSC = (SystemCoreClock / 2) / 1000000u - 1u;
-    TIM5->ARR = 9u;
-    TIM5->CCR1 = 0u;
-    TIM5->OR = 0u;
-    LL_TIM_GenerateEvent_UPDATE(TIM5);
+    MDRV_TIME_BASE_CONFIG__TIM_CLK_ENABLE();
+    /* MDRV_TIME_BASE_CONFIG__TIM interrupt Init */
+    HAL_NVIC_SetPriority(MDRV_TIME_BASE_CONFIG__TIM_IRQN, 0, 0);
+    HAL_NVIC_EnableIRQ(MDRV_TIME_BASE_CONFIG__TIM_IRQN);
+    MDRV_TIME_BASE_CONFIG__TIM->CR1 = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->DIER = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->SR = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->EGR = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->CCMR1 = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->CCER = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->CNT = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->PSC = (SystemCoreClock / 2) / 1000000u - 1u;
+    MDRV_TIME_BASE_CONFIG__TIM->ARR = 9u;
+    MDRV_TIME_BASE_CONFIG__TIM->CCR1 = 0u;
+    MDRV_TIME_BASE_CONFIG__TIM->OR = 0u;
+    LL_TIM_GenerateEvent_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
 }
 
 void mdrv__time_base__start(void *context, uint32_t period)
 {
     (void) context;
 
-    LL_TIM_DisableCounter(TIM5);
-    LL_TIM_SetAutoReload(TIM5, period - 1u);
-    LL_TIM_GenerateEvent_UPDATE(TIM5);
+    LL_TIM_DisableCounter(MDRV_TIME_BASE_CONFIG__TIM);
+    LL_TIM_SetAutoReload(MDRV_TIME_BASE_CONFIG__TIM, period - 1u);
+    LL_TIM_GenerateEvent_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
     /* Enable interrupt and timer */
-    LL_TIM_EnableIT_UPDATE(TIM5);
-    LL_TIM_EnableCounter(TIM5);
+    LL_TIM_EnableIT_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
+    LL_TIM_EnableCounter(MDRV_TIME_BASE_CONFIG__TIM);
+}
+#include "main.h"
+
+void mdrv__time_base__start_on_trigger(void *context, uint32_t period)
+{
+    (void) context;
+    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_ALTERNATE);
+    LL_GPIO_SetAFPin_0_7(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_AF_3);
+    LL_TIM_DisableCounter(MDRV_TIME_BASE_CONFIG__TIM);
+    LL_TIM_SetAutoReload(MDRV_TIME_BASE_CONFIG__TIM, period - 1u);
+    LL_TIM_GenerateEvent_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
+    LL_TIM_SetTriggerInput(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_TS_TI1FP1);
+    LL_TIM_SetSlaveMode(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_SLAVEMODE_TRIGGER);
+    LL_TIM_CC_DisableChannel(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_CHANNEL_CH1);
+    LL_TIM_IC_SetFilter(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV1);
+    LL_TIM_IC_SetPolarity(MDRV_TIME_BASE_CONFIG__TIM,
+                          LL_TIM_CHANNEL_CH1,
+                          LL_TIM_IC_POLARITY_FALLING);
+    /* Enable interrupt and timer */
+    LL_TIM_EnableIT_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
+    LL_TIM_EnableCounter(MDRV_TIME_BASE_CONFIG__TIM);
 }
 
 void mdrv__time_base__stop(void *context)
 {
     (void) context;
-    LL_TIM_DisableCounter(TIM5);
-    LL_TIM_DisableIT_UPDATE(TIM5);
-    LL_TIM_GenerateEvent_UPDATE(TIM5);
+    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE)
+    LL_TIM_CC_DisableChannel(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_CHANNEL_CH1);
+    LL_TIM_DisableCounter(MDRV_TIME_BASE_CONFIG__TIM);
+    LL_TIM_DisableIT_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
+    LL_TIM_GenerateEvent_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
 }
 
 void mdrv__time_base__it(void)
 {
-    mdrv__it(g__mdrv_context);
+    if (LL_TIM_IsActiveFlag_UPDATE(MDRV_TIME_BASE_CONFIG__TIM)
+        && LL_TIM_IsEnabledIT_UPDATE(MDRV_TIME_BASE_CONFIG__TIM)) {
+        LL_TIM_ClearFlag_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
+        mdrv__it(g__mdrv_context);
+    }
 }

@@ -1,4 +1,3 @@
-
 #include "main.h"
 
 #include "usbd_cdc_terminal.h"
@@ -20,7 +19,8 @@ static const struct mdrv__ll mdrv__ll = {
     .pin_write = pin_write,
     .pin_read = pin_read,
     .tim_start = mdrv__time_base__start,
-    .tim_stop = mdrv__time_base__stop, };
+    .tim_stop = mdrv__time_base__stop,
+    .tim_start_on_trigger = mdrv__time_base__start_on_trigger};
 
 static struct mdrv__context mdrv__context;
 
