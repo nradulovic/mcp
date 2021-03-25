@@ -19,12 +19,14 @@ Manchester code. The following Manchester coding conventions are supported:
 ## Getting started
 
 For current list of issues see [ISSUES.md](ISSUES.md).
-For list of serial console commands refer to [COMMANDS.md](COMMANDS.md). 
+For list of serial console commands refer to [COMMANDS.md](COMMANDS.md).
+For hardware connection refer to [WIRING.md](WIRING.md).
 
 ### Prerequisites
 
 * STM32CubeIDE
 * Development board STM32F411E-DISCO
+* anyCS sensor
 
 ### Importing project
 
