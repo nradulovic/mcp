@@ -7,6 +7,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_ll_tim.h"
+#include "error_handler.h"
 #include "config_mdrv_time_base.h"
 #include "mdrv.h"
 
@@ -58,27 +59,11 @@ void mdrv__time_base__start_on_trigger(void *context, uint32_t period)
     TimHandle.Init.CounterMode = TIM_COUNTERMODE_UP;
     TimHandle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Stop_IT(&TimHandle) != HAL_OK) {
-        while (true)
-            ;
+        error_handler__handle();
     }
     if (HAL_TIM_Base_Init(&TimHandle) != HAL_OK) {
-        /* Initialization Error */
-        while (true)
-            ;
+        error_handler__handle();
     }
-//    LL_TIM_DisableCounter(MDRV_TIME_BASE_CONFIG__TIM);
-//    LL_TIM_SetAutoReload(MDRV_TIME_BASE_CONFIG__TIM, period - 1u);
-//    LL_TIM_GenerateEvent_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
-//    LL_TIM_SetTriggerInput(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_TS_TI1FP1);
-//    LL_TIM_SetSlaveMode(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_SLAVEMODE_TRIGGER);
-//    LL_TIM_CC_DisableChannel(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_CHANNEL_CH1);
-//    LL_TIM_IC_SetFilter(MDRV_TIME_BASE_CONFIG__TIM, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV1);
-//    LL_TIM_IC_SetPolarity(MDRV_TIME_BASE_CONFIG__TIM,
-//                          LL_TIM_CHANNEL_CH1,
-//                          LL_TIM_IC_POLARITY_FALLING);
-//    /* Enable interrupt and timer */
-//    LL_TIM_EnableIT_UPDATE(MDRV_TIME_BASE_CONFIG__TIM);
-//    LL_TIM_EnableCounter(MDRV_TIME_BASE_CONFIG__TIM);
 
     TIM_SlaveConfigTypeDef sSlave = {
         .SlaveMode = TIM_SLAVEMODE_TRIGGER,
@@ -88,12 +73,10 @@ void mdrv__time_base__start_on_trigger(void *context, uint32_t period)
         .TriggerFilter = 0};
 
     if (HAL_TIM_SlaveConfigSynchro(&TimHandle, &sSlave) != HAL_OK) {
-        while (true)
-            ;
+        error_handler__handle();
     }
     if (HAL_TIM_Base_Start_IT(&TimHandle) != HAL_OK) {
-        while (true)
-            ;
+        error_handler__handle();
     }
 }
 
