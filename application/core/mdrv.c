@@ -231,12 +231,10 @@ void mdrv__it(struct mdrv__context *context)
             context->p__ll.tim_stop(context->p__ll_context);
             context->p__state = MDRV__STATE__IDLE;
         } else {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
             context->p__state = MDRV__STATE__PRE_RX;
         }
         break;
     case MDRV__STATE__PRE_RX:
-        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
         context->p__ll.tim_stop(context->p__ll_context);
         context->p__index = 0u;
         context->p__state = MDRV__STATE__RX_FHI;
@@ -244,7 +242,6 @@ void mdrv__it(struct mdrv__context *context)
         while (context->p__ll.pin_read(context->p__ll_context))
             ;
         context->p__ll.tim_start(context->p__ll_context, context->p__config->quarter_period_us);
-        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
         break;
     case MDRV__STATE__RX_FHI: {
         bool value = context->p__ll.pin_read(context->p__ll_context);
@@ -266,7 +263,6 @@ void mdrv__it(struct mdrv__context *context)
     }
     case MDRV__STATE__RX_SHS:
         if (context->p__index == context->p__rd_size) {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
             set_idle(context);
             context->p__ll.tim_stop(context->p__ll_context);
             context->p__state = MDRV__STATE__IDLE;

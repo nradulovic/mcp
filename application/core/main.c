@@ -1,9 +1,10 @@
 #include "main.h"
-
+#include "config_peripherals.h"
 #include "usbd_cdc_terminal.h"
 #include "mdrv.h"
 #include "error_handler.h"
 #include "mdrv_time_base.h"
+#include "stm32f4xx_hal.h"
 #include "stm32f4xx_ll_gpio.h"
 
 static void system_clock_init(void);

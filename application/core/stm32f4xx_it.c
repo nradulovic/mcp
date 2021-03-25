@@ -1,6 +1,6 @@
 
 #include "main.h"
-#include "stm32f4xx_it.h"
+#include "stm32f4xx_hal.h"
 #include "error_handler.h"
 #include "config_mdrv_time_base.h"
 

@@ -8,6 +8,7 @@
 #ifndef MDRV_H_
 #define MDRV_H_
 
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 
