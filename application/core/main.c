@@ -1,265 +1,157 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-#include "app_usbd_cdc.h"
+#include "usbd_cdc_terminal.h"
+#include "mdrv.h"
+#include "error_handler.h"
+#include "mdrv_time_base.h"
+#include "stm32f4xx_ll_gpio.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+static void system_clock_init(void);
+static void gpio_init(void);
+static void pin_init_output(void *context, bool value);
+static void pin_init_input(void *context);
+static void pin_init_trigger(void *context);
+static void pin_write(void *context, bool value);
+static bool pin_read(void *context);
 
-/* USER CODE END Includes */
+static const struct mdrv__ll mdrv__ll = {
+    .pin_init_input = pin_init_input,
+    .pin_init_output = pin_init_output,
+    .pin_init_trigger = pin_init_trigger,
+    .pin_write = pin_write,
+    .pin_read = pin_read,
+    .tim_start = mdrv__time_base__start,
+    .tim_stop = mdrv__time_base__stop,
+    .tim_start_on_trigger = mdrv__time_base__start_on_trigger};
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
+static struct mdrv__context mdrv__context;
 
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim10;
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_TIM10_Init(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-static void usb_receive(void * arg, const void * data, uint16_t length);
-
-static struct app_usbd_cdc__context usbd_cdc_context = {
-    .receive = usb_receive
-};
-
-static void usb_receive(void * arg, const void * data, uint16_t length)
-{
-    UNUSED(arg);
-    app_usbd_cdc__transmit(data, length);
-}
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+    /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+    HAL_Init();
 
-  /* USER CODE END 1 */
+    /* Configure the system clock */
+    system_clock_init();
+    DBGMCU->APB2FZ |= (DBGMCU_APB2_FZ_DBG_TIM9_STOP);
 
-  /* MCU Configuration--------------------------------------------------------*/
+    /* Initialize all configured peripherals */
+    gpio_init();
+    mdrv__time_base__init(&mdrv__context);
+    mdrv__init(&mdrv__context, &mdrv__ll, NULL);
+    usbd_cdc_terminal__init();
+    usbd_cdc_terminal__set_terminal_context(&mdrv__context);
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_TIM10_Init();
-  app_usbd_cdc__init(&usbd_cdc_context);
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
-  /* USER CODE END 3 */
+    /* Infinite loop */
+    while (1) {
+        usbd_cdc_terminal__loop();
+    }
 }
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
+void system_clock_init(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_OscInitTypeDef RCC_OscInitStruct = {
+        0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {
+        0};
 
-  /** Configure the main internal regulator output voltage
-  */
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 192;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
-  RCC_OscInitStruct.PLL.PLLQ = 8;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    /** Configure the main internal regulator output voltage
+     */
+    __HAL_RCC_PWR_CLK_ENABLE();
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+    /**
+     * Initializes the RCC Oscillators according to the specified parameters
+     * in the RCC_OscInitTypeDef structure.
+     */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLM = 4;
+    RCC_OscInitStruct.PLL.PLLN = 192;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
+    RCC_OscInitStruct.PLL.PLLQ = 8;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
+        error_handler__handle();
+    }
+    /** Initializes the CPU, AHB and APB buses clocks
+     */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1
+        | RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK) {
+        error_handler__handle();
+    }
+    SystemCoreClockUpdate();
 }
 
-/**
-  * @brief TIM10 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM10_Init(void)
+static void gpio_init(void)
 {
+    GPIO_InitTypeDef gpio_init_struct = {
+        0};
 
-  /* USER CODE BEGIN TIM10_Init 0 */
+    /* Initialize DATA pin */
+    MCP_DATA_CLK_ENABLE();
+    gpio_init_struct.Pin = MCP_DATA_PIN;
+    gpio_init_struct.Mode = GPIO_MODE_INPUT;
+    gpio_init_struct.Pull = GPIO_NOPULL;
+    gpio_init_struct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    gpio_init_struct.Alternate = 0;
+    HAL_GPIO_Init(MCP_DATA_GPIO_PORT, &gpio_init_struct);
 
-  /* USER CODE END TIM10_Init 0 */
-
-  /* USER CODE BEGIN TIM10_Init 1 */
-
-  /* USER CODE END TIM10_Init 1 */
-  htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 0;
-  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 65535;
-  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM10_Init 2 */
-
-  /* USER CODE END TIM10_Init 2 */
-
+    /* Initialize STATUS pin */
+    MCP_STATUS_CLK_ENABLE();
+    gpio_init_struct.Pin = MCP_STATUS_PIN;
+    gpio_init_struct.Mode = GPIO_MODE_OUTPUT_PP;
+    gpio_init_struct.Pull = GPIO_NOPULL;
+    gpio_init_struct.Speed = GPIO_SPEED_FREQ_LOW;
+    gpio_init_struct.Alternate = 0;
+    HAL_GPIO_Init(MCP_STATUS_GPIO_PORT, &gpio_init_struct);
 }
 
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
+static void pin_init_output(void *context, bool value)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, MCP_DATA_Pin|MCP_DEBUG_Pin|MCP_AUX0_Pin|MCP_STATUS_Pin
-                          |MCP_ERROR_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : MCP_DATA_Pin */
-  GPIO_InitStruct.Pin = MCP_DATA_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
-  HAL_GPIO_Init(MCP_DATA_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : MCP_DEBUG_Pin MCP_AUX0_Pin MCP_STATUS_Pin MCP_ERROR_Pin */
-  GPIO_InitStruct.Pin = MCP_DEBUG_Pin|MCP_AUX0_Pin|MCP_STATUS_Pin|MCP_ERROR_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
+    pin_write(context, value);
+    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_OUTPUT);
 }
 
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
+static void pin_init_input(void *context)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
+    (void) context;
+    LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_INPUT);
 }
 
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
+static void pin_init_trigger(void *context)
 {
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */
+    (void) context;
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+    GPIO_InitTypeDef input_pin = {
+          .Pin = GPIO_PIN_2,
+          .Mode = GPIO_MODE_AF_PP,
+          .Alternate = GPIO_AF3_TIM9,
+          .Pull = GPIO_NOPULL,
+          .Speed = GPIO_SPEED_FAST
+      };
+
+      HAL_GPIO_Init(GPIOA, &input_pin);
+}
+
+static void pin_write(void *context, bool state)
+{
+    (void) context;
+    if (state) {
+        LL_GPIO_SetOutputPin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN);
+    } else {
+        LL_GPIO_ResetOutputPin(MCP_DATA_GPIO_PORT, MCP_DATA_PIN);
+    }
+}
+
+static bool pin_read(void *context)
+{
+    (void) context;
+    return LL_GPIO_ReadInputPort(MCP_DATA_GPIO_PORT) & MCP_DATA_PIN;
+}

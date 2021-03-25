@@ -6,7 +6,7 @@
 #include "stm32f4xx_hal.h"
 #include "usbd_core.h"
 #include "usbd_def.h"
-#include "main.h"
+#include "error_handler.h"
 
 static USBD_StatusTypeDef USBD_Get_USB_Status(HAL_StatusTypeDef hal_status);
 
@@ -36,7 +36,7 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
         hpcd_USB_OTG_FS.Init.vbus_sensing_enable = DISABLE;
         hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
         if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK) {
-            Error_Handler();
+            error_handler__handle();
         }
 
 #if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
