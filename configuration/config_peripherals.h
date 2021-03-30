@@ -10,12 +10,6 @@
 
 #include "stm32f4xx_hal.h"
 
-#define MCP_DATA_PIN                    GPIO_PIN_2
-#define MCP_DATA_PIN_NO                 2
-#define MCP_DATA_GPIO_PORT              GPIOA
-#define MCP_DATA_CLK_ENABLE()           __HAL_RCC_GPIOA_CLK_ENABLE()
-#define MCP_DATA_TRIGGER_AF             LL_GPIO_AF_3
-
 #define MCP_STATUS_PIN                  GPIO_PIN_12
 #define MCP_STATUS_GPIO_PORT            GPIOD
 #define MCP_STATUS_CLK_ENABLE()         __HAL_RCC_GPIOD_CLK_ENABLE()

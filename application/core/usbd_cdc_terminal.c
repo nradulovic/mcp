@@ -141,5 +141,4 @@ void usbd_cdc_terminal__loop(void)
         sm_state = STATE_PROCESS;
         break;
     }
-
 }

@@ -165,8 +165,6 @@ int mdrv__xchg(struct mdrv__context *context,
     return 0;
 }
 
-#include "main.h"
-
 void mdrv__it(struct mdrv__context *context)
 {
     switch (context->p__state) {

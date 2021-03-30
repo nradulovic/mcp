@@ -1,8 +1,7 @@
 
-#include "main.h"
+#include "config_mdrv_application.h"
 #include "stm32f4xx_hal.h"
 #include "error_handler.h"
-#include "config_mdrv_time_base.h"
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
@@ -50,7 +49,7 @@ void SysTick_Handler(void)
 
 void MDRV_TIME_BASE_CONFIG__TIM_IRQ_HANDLER(void)
 {
-    mdrv__time_base__it();
+    mdrv__application__tim__isr();
 }
 
 void OTG_FS_IRQHandler(void)
