@@ -1,0 +1,98 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Menlo-Bold;\f2\fnil\fcharset0 Menlo-Regular;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue109;\red15\green112\blue3;\red0\green0\blue254;
+\red14\green110\blue109;}
+{\*\expandedcolortbl;;\csgenericrgb\c0\c0\c42745;\csgenericrgb\c5882\c43922\c1176;\csgenericrgb\c0\c0\c99608;
+\csgenericrgb\c5490\c43137\c42745;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww22020\viewh12040\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Hello Nenad,\
+\
+I am able to communicate with the MCU but I cannot read data from the sensor.\
+Unfortunately I am in quarantine and I do not have access to an oscilloscope at the moment.\
+\
+The data line is connected to pin PA2. If possible, please help me debugging my setup.\
+There is always the response \'93Failed to convert from Manchester encoding.\'94 In case of \
+\
+\
+My code: (in anyCSInterface is just initialise a serial.Serial \'85)\
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f1\b \cf2 import 
+\f2\b0 \cf0 anyCSInterface\
+\
+\
+anycs_dev = anyCSInterface.anyCSInterface()\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0 \cf0 \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f2 \cf0 anycs_dev.serIF.write(
+\f1\b \cf3 b'help\cf2 \\r\\n\cf3 '
+\f2\b0 \cf0 )\
+
+\f1\b \cf2 for 
+\f2\b0 \cf0 i 
+\f1\b \cf2 in 
+\f2\b0 range\cf0 (\cf4 1\cf0 ,\cf4 11\cf0 ):\
+    raw_ser_reply = anycs_dev.serIF.readline()\
+    \cf2 print\cf0 (
+\f1\b \cf5 "\{0\} : \{1\}"
+\f2\b0 \cf0 .format(i, raw_ser_reply))\
+\
+anycs_dev.serIF.write(
+\f1\b \cf3 b'rxchg 5555137f 32 0\cf2 \\r\\n\cf3 '
+\f2\b0 \cf0 )\
+
+\f1\b \cf2 for 
+\f2\b0 \cf0 i 
+\f1\b \cf2 in 
+\f2\b0 range\cf0 (\cf4 1\cf0 ,\cf4 3\cf0 ):\
+    raw_ser_reply = anycs_dev.serIF.readline()\
+    \cf2 print\cf0 (
+\f1\b \cf5 "\{0\} : \{1\}"
+\f2\b0 \cf0 .format(i, raw_ser_reply))\
+\
+\
+anycs_dev.serIF.write(
+\f1\b \cf3 b'rxchg 55aa6c4c 30 24\cf2 \\r\\n\cf3 '
+\f2\b0 \cf0 )\
+
+\f1\b \cf2 for 
+\f2\b0 \cf0 i 
+\f1\b \cf2 in 
+\f2\b0 range\cf0 (\cf4 1\cf0 ,\cf4 3\cf0 ):\
+    raw_ser_reply = anycs_dev.serIF.readline()\
+    \cf2 print\cf0 (
+\f1\b \cf5 "\{0\} : \{1\}"
+\f2\b0 \cf0 .format(i, raw_ser_reply))\
+\
+anycs_dev.closeIF()\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0 \cf0 \
+\
+\
+Output:\
+\
+\
+Found serial interface: /dev/tty.usbmodem3492365833371\
+1 : b'\\r\\n'\
+2 : b'## Manchester Code Proxy (MCP) V1.0 (2021-03-18) command list ##\\r\\n'\
+3 : b'\\r\\n'\
+4 : b'help   - Prints the list of available commands\\r\\n'\
+5 : b'set    - Set a value in MCP configuration\\r\\n'\
+6 : b'get    - Get a value from MCP configuration\\r\\n'\
+7 : b'rxchg  - Raw Exchange Data command\\r\\n'\
+8 : b'dwrite - Write to register in Debug Access Mode\\r\\n'\
+9 : b'dread  - Read from register in Debug Access Mode\\r\\n'\
+10 : b''\
+1 : b'\\n'\
+2 : b'\\r\\n'\
+1 : b'\\r\\n'\
+2 : b'\\rE0312: Failed to convert from Manchester encoding.\\n' }
