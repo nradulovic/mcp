@@ -5,7 +5,12 @@
  *      Author: nenad
  */
 
+#include <stdint.h>
+
+#include "generic/nk_farray.h"
 #include "mde__encoder.h"
+
+struct coding_scheme NK_FARRAY__T(uint16_t, 2);
 
 static void encode_lsb_first(const uint16_t scheme[2],
                              uint8_t value,

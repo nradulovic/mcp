@@ -10,6 +10,8 @@
 
 #include "terminal.h"
 
+struct nk_string;
+
 const char* command_rxchg__fn(void *terminal_context,
                               void *command_context,
                               size_t arg_count,

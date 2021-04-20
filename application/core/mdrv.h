@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "generic/nk_error.h"
+
 enum mdrv__state
 {
     MDRV__STATE__IDLE,
@@ -53,16 +55,15 @@ struct mdrv__ll
     tim_start_on_trigger_fn * tim_start_on_trigger;
 };
 
+/* Forward declarations of internal structures */
 struct mdrv__config;
+struct nk_types__array__u8;
 
 struct mdrv__context
 {
     volatile enum mdrv__state p__state;
-    const void *p__wr_data;
-    void * p__rd_data;
-    size_t p__wr_size;
-    size_t p__rd_size;
-    size_t p__index;
+    size_t p__tx_index;
+    size_t p__rx_size;
     uint32_t p__period_count;
     struct mdrv__ll p__ll;
     void *p__ll_context;
@@ -94,11 +95,9 @@ struct mdrv__config
 void mdrv__init(struct mdrv__context *context, const struct mdrv__ll *ll, void *ll_context);
 int mdrv__set_config(struct mdrv__context *context, const struct mdrv__config *config);
 size_t mdrv__get_io_buffer_length(const struct mdrv__context *context);
-int mdrv__write(struct mdrv__context *context, const void *data, size_t size);
-int mdrv__xchg(struct mdrv__context *context,
-               const void *wr_data,
-               size_t wr_size,
-               void *rd_data,
+enum nk_error mdrv__xchg(struct mdrv__context *context,
+               const struct nk_types__array__u8 *wr_data,
+               struct nk_types__array__u8 *rd_data,
                size_t rd_size);
 void mdrv__it(struct mdrv__context *context);
 

@@ -9,12 +9,28 @@
 
 #include "mdrv.h"
 #include "mde/mde__encoder.h"
+#include "generic/nk_debug.h"
+#include "generic/nk_array.h"
+#include "generic/nk_types.h"
+#include "generic/nk_bits.h"
+#include "generic/codec/nk_manchester.h"
 
 #define IO_BUFFER_LENGTH                2048u
 #define MIN_PRE_TX_PERIODS              10u
 
-static bool g__tx__encoded_bits[IO_BUFFER_LENGTH * 2u];
-static bool g__rx__encoded_bits[IO_BUFFER_LENGTH * 2u];
+struct mdrv__exc_buffer_bucket
+    NK_ARRAY__BUCKET_TYPED_T(bool, IO_BUFFER_LENGTH, struct nk_types__array__bool)
+;
+struct bit_buffer
+    NK_ARRAY__BUCKET_T(uint8_t, NK_BITS__DIVIDE_ROUNDUP(IO_BUFFER_LENGTH, 8u))
+;
+
+static struct mdrv__exc_buffer_bucket g__tx__buffer = NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__tx__buffer)
+;
+static struct mdrv__exc_buffer_bucket g__rx__buffer = NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__rx__buffer)
+;
+static struct bit_buffer g__bit_buffer = NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__bit_buffer)
+;
 
 static const struct mdrv__config default_config = {
     .idle = MDRV__CONFIG__IDLE__FLOAT,
@@ -35,21 +51,6 @@ static void set_idle(const struct mdrv__context *context)
         context->p__ll.pin_init_input(context->p__ll_context);
         break;
     }
-}
-
-static bool get_half_bit(size_t bit_index)
-{
-    return g__tx__encoded_bits[bit_index];
-}
-
-static void put_half_bit(size_t bit_index, bool value)
-{
-    g__rx__encoded_bits[bit_index] = value;
-}
-
-static uint32_t max__uint32_t(uint32_t v1, uint32_t v2)
-{
-    return v1 > v2 ? v1 : v2;
 }
 
 void mdrv__init(struct mdrv__context *context, const struct mdrv__ll *ll, void *ll_context)
@@ -77,73 +78,30 @@ size_t mdrv__get_io_buffer_length(const struct mdrv__context *context)
     return IO_BUFFER_LENGTH;
 }
 
-int mdrv__write(struct mdrv__context *context, const void *data, size_t size)
+enum nk_error mdrv__xchg(struct mdrv__context *context,
+                         const struct nk_types__array__u8 *wr_data,
+                         struct nk_types__array__u8 *rd_data,
+                         size_t rx_size)
 {
-    if (size > IO_BUFFER_LENGTH) {
-        return -1;
-    }
+    struct nk_manchester__result mnc_result;
+
+    nk_assert(((rx_size != 0u) && (rx_data != NULL)) || ((rx_size == 0u) && (rx_data == NULL)));
+
     context->p__period_count = 0u;
-    context->p__rd_data = NULL;
-    context->p__rd_size = 0u;
-    context->p__wr_data = data;
-    context->p__wr_size = size * 2; /* Manchester encoding uses 2 bits per one data bit. */
-    context->p__index = 0u;
-    memset(g__tx__encoded_bits, 0, sizeof(g__tx__encoded_bits));
-    int converted = mde__biphasel__encode_byte_array(data,
-                                                     size,
-                                                     g__tx__encoded_bits,
-                                                     sizeof(g__tx__encoded_bits),
-                                                     size);
+    context->p__tx_index = 0u;
+    context->p__rx_size = rx_size * 2u; /* Every bit has two half-periods */
 
-    if (converted != (int)size) {
-        return -2;
-    }
-    if (context->p__config->pre_tx_period_count != 0u) {
-        uint32_t pre_tx_period;
-        pre_tx_period = max__uint32_t(context->p__config->pre_tx_period_count, MIN_PRE_TX_PERIODS);
-        context->p__period_count = pre_tx_period - 1u;
-        context->p__state = MDRV__STATE__PRE_TX;
-    } else {
-        context->p__state = MDRV__STATE__INIT_TX;
-    }
-    context->p__ll.tim_start(context->p__ll_context, context->p__config->quarter_period_us);
-    while (context->p__state != MDRV__STATE__IDLE) {
-        ;
-    }
+    g__tx__buffer.array.length = 0u;
+    g__rx__buffer.array.length = 0u;
 
-    return 0;
-}
+    mnc_result = nk_manchester__encode__biphasel(wr_data, &g__tx__buffer.array);
 
-int mdrv__xchg(struct mdrv__context *context,
-               const void *wr_data,
-               size_t wr_size,
-               void *rd_data,
-               size_t rd_size)
-{
-    if ((wr_size > IO_BUFFER_LENGTH) || (rd_size > IO_BUFFER_LENGTH)) {
-        return -1;
-    }
-    context->p__period_count = 0u;
-    context->p__rd_data = rd_data;
-    context->p__rd_size = rd_size * 2u; /* Manchester encoding uses 2 bits per one data bit. */
-    context->p__wr_data = wr_data;
-    context->p__wr_size = wr_size * 2u; /* Manchester encoding uses 2 bits per one data bit. */
-    context->p__index = 0u;
-
-    memset(g__tx__encoded_bits, 0, sizeof(g__tx__encoded_bits));
-    memset(g__rx__encoded_bits, 0, sizeof(g__rx__encoded_bits));
-    int converted = mde__biphasel__encode_byte_array(wr_data,
-                                                     wr_size,
-                                                     g__tx__encoded_bits,
-                                                     sizeof(g__tx__encoded_bits),
-                                                     wr_size);
-
-    if (converted != (int)wr_size) {
-        return -2;
+    if (mnc_result.error != NK_ERROR__OK) {
+        return mnc_result.error;
     }
     if (context->p__config->pre_tx_period_count != 0) {
         uint32_t pre_tx_period;
-        pre_tx_period = max__uint32_t(context->p__config->pre_tx_period_count, MIN_PRE_TX_PERIODS);
+        pre_tx_period = MAX(context->p__config->pre_tx_period_count, MIN_PRE_TX_PERIODS);
         context->p__period_count = pre_tx_period - 1u;
         context->p__state = MDRV__STATE__PRE_TX;
     } else {
@@ -153,14 +111,22 @@ int mdrv__xchg(struct mdrv__context *context,
     while (context->p__state != MDRV__STATE__IDLE) {
         ;
     }
-    converted = mde__biphasel__decode_byte_array(g__rx__encoded_bits,
-                                                sizeof(g__rx__encoded_bits),
-                                                rd_data,
-                                                rd_size,
-                                                rd_size);
+    if ((rx_size != 0u) && (rd_data != NULL)) {
+        mnc_result = nk_manchester__decode__biphasel(&g__rx__buffer.array, rd_data);
 
-    if (converted != (int)rd_size) {
-        return -3;
+        switch (mnc_result.error) {
+        case NK_ERROR__OK:
+            break;
+        case NK_ERROR__DATA_ODD:
+            return NK_ERROR__DATA_ODD;
+        case NK_ERROR__BUFFER_OVF:
+            return NK_ERROR__BUFFER_OVF;
+        default:
+            return NK_ERROR__DATA_INVALID;
+        }
+        if (mnc_result.value != rx_size) {
+            return NK_ERROR__DATA_UNDERFLOW;
+        }
     }
     return 0;
 }
@@ -198,33 +164,33 @@ void mdrv__it(struct mdrv__context *context)
          * Write the first bit together with initialization. Since this is the first bit, we don't
          * need to check if we have reached end of transmission like we do in MDRV__STATE__TX
          */
-        context->p__ll.pin_init_output(context->p__ll_context, get_half_bit(context->p__index));
-        context->p__index++;
+        context->p__ll.pin_init_output(context->p__ll_context,
+                                       g__tx__buffer.array.items[context->p__tx_index++]);
         context->p__state = MDRV__STATE__TX_FHI;
         break;
     case MDRV__STATE__TX_FH:
-        context->p__ll.pin_write(context->p__ll_context, get_half_bit(context->p__index));
-        context->p__index++;
+        context->p__ll.pin_write(context->p__ll_context,
+                                 g__tx__buffer.array.items[context->p__tx_index++]);
         context->p__state = MDRV__STATE__TX_FHI;
         break;
     case MDRV__STATE__TX_FHI:
         context->p__state = MDRV__STATE__TX_SH;
         break;
     case MDRV__STATE__TX_SH: {
-        context->p__ll.pin_write(context->p__ll_context, get_half_bit(context->p__index));
-        context->p__index++;
+        context->p__ll.pin_write(context->p__ll_context,
+                                 g__tx__buffer.array.items[context->p__tx_index++]);
         context->p__state = MDRV__STATE__TX_SHI;
         break;
     }
     case MDRV__STATE__TX_SHI:
-        if (context->p__index == context->p__wr_size) {
+        if (context->p__tx_index == g__tx__buffer.array.length) {
             context->p__state = MDRV__STATE__TX_COMPLETE;
         } else {
             context->p__state = MDRV__STATE__TX_FH;
         }
         break;
     case MDRV__STATE__TX_COMPLETE:
-        if (context->p__rd_size == 0u) {
+        if (context->p__rx_size == 0u) {
             set_idle(context);
             context->p__ll.tim_stop(context->p__ll_context);
             context->p__state = MDRV__STATE__IDLE;
@@ -234,7 +200,6 @@ void mdrv__it(struct mdrv__context *context)
         break;
     case MDRV__STATE__PRE_RX:
         context->p__ll.tim_stop(context->p__ll_context);
-        context->p__index = 0u;
         context->p__state = MDRV__STATE__RX_FHI;
         context->p__ll.pin_init_input(context->p__ll_context);
         while (context->p__ll.pin_read(context->p__ll_context))
@@ -243,8 +208,7 @@ void mdrv__it(struct mdrv__context *context)
         break;
     case MDRV__STATE__RX_FHI: {
         bool value = context->p__ll.pin_read(context->p__ll_context);
-        put_half_bit(context->p__index, value);
-        context->p__index++;
+        g__rx__buffer.array.items[g__rx__buffer.array.length++] = value;
         context->p__state = MDRV__STATE__RX_FHS;
         break;
     }
@@ -254,13 +218,12 @@ void mdrv__it(struct mdrv__context *context)
         break;
     case MDRV__STATE__RX_SHI: {
         bool value = context->p__ll.pin_read(context->p__ll_context);
-        put_half_bit(context->p__index, value);
-        context->p__index++;
+        g__rx__buffer.array.items[g__rx__buffer.array.length++] = value;
         context->p__state = MDRV__STATE__RX_SHS;
         break;
     }
     case MDRV__STATE__RX_SHS:
-        if (context->p__index == context->p__rd_size) {
+        if (g__rx__buffer.array.length == context->p__rx_size) {
             set_idle(context);
             context->p__ll.tim_stop(context->p__ll_context);
             context->p__state = MDRV__STATE__IDLE;

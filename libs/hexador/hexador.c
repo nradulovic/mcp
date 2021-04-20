@@ -132,7 +132,7 @@ size_t hexador__to_bin(const char *source, uint8_t *destination)
             if (error) {
                 return converted;
             }
-            *destination++ = (uint8_t)((hi_half << 4) | lo_half);
+            *destination++ = (uint8_t) ((hi_half << 4) | lo_half);
             converted++;
             state = STATE_HIGH;
             break;

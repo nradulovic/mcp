@@ -1,4 +1,3 @@
-
 #include <stdbool.h>
 
 #include "mdrv.h"
@@ -25,6 +24,9 @@ static const struct mdrv__ll mdrv__ll = {
 
 static struct mdrv__context g__mdrv__context;
 static struct mcp_config__context g__mcp_config__context;
+static struct usbd_cdc_terminal__context g__usbd_cdc_terminal__context = {
+    .mdrv = &g__mdrv__context,
+    .config = &g__mcp_config__context};
 
 int main(void)
 {
@@ -40,7 +42,7 @@ int main(void)
     mdrv__application__init(&g__mdrv__context);
     mdrv__init(&g__mdrv__context, &mdrv__ll, NULL);
     usbd_cdc_terminal__init();
-    usbd_cdc_terminal__set_terminal_context(&g__mdrv__context);
+    usbd_cdc_terminal__set_terminal_context(&g__usbd_cdc_terminal__context);
 
     /* Infinite loop */
     while (true) {
@@ -50,17 +52,17 @@ int main(void)
 
 static void gpio_init(void)
 {
-    GPIO_InitTypeDef gpio_init_struct = {
+    GPIO_InitTypeDef gpio_init = {
         0};
 
     /* Initialize STATUS pin */
     MCP_STATUS_CLK_ENABLE();
-    gpio_init_struct.Pin = MCP_STATUS_PIN;
-    gpio_init_struct.Mode = GPIO_MODE_OUTPUT_PP;
-    gpio_init_struct.Pull = GPIO_NOPULL;
-    gpio_init_struct.Speed = GPIO_SPEED_FREQ_LOW;
-    gpio_init_struct.Alternate = 0;
-    HAL_GPIO_Init(MCP_STATUS_GPIO_PORT, &gpio_init_struct);
+    gpio_init.Pin = MCP_STATUS_PIN;
+    gpio_init.Mode = GPIO_MODE_OUTPUT_PP;
+    gpio_init.Pull = GPIO_NOPULL;
+    gpio_init.Speed = GPIO_SPEED_FREQ_LOW;
+    gpio_init.Alternate = 0;
+    HAL_GPIO_Init(MCP_STATUS_GPIO_PORT, &gpio_init);
 }
 
 void system_clock_init(void)

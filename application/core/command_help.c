@@ -18,9 +18,7 @@ const char* command_help__fn(void *terminal_context,
         "help   - Prints the list of available commands\r\n"
         "set    - Set a value in MCP configuration\r\n"
         "get    - Get a value from MCP configuration\r\n"
-        "rxchg  - Raw Exchange Data command\r\n"
-        "dwrite - Write to register in Debug Access Mode\r\n"
-        "dread  - Read from register in Debug Access Mode\r\n";
+        "rxchg  - Raw Exchange Data command\r\n";
 
     (void) terminal_context;
     (void) command_context;

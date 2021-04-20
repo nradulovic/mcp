@@ -14,7 +14,6 @@
 #include "config_usbd_cdc_terminal.h"
 #include "mdrv.h"
 #include "command_help.h"
-#include "command_write.h"
 #include "command_rxchg.h"
 #include "command_set.h"
 #include "command_get.h"
@@ -39,10 +38,6 @@ static const struct terminal__command_descriptor g__terminal_commands[] = {
         .command_id = "help",
         .interpreter = {
             .fn = command_help__fn, }},
-    {
-        .command_id = "write",
-        .interpreter = {
-            .fn = command_write__fn, }},
     {
         .command_id = "rxchg",
         .interpreter = {
@@ -93,7 +88,7 @@ void usbd_cdc_terminal__init(void)
     app_usbd_cdc__init(&usbd_cdc_context);
 }
 
-void usbd_cdc_terminal__set_terminal_context(void *terminal_context)
+void usbd_cdc_terminal__set_terminal_context(struct usbd_cdc_terminal__context *terminal_context)
 {
     terminal__set_terminal_context(g__state.terminal, terminal_context);
 }
