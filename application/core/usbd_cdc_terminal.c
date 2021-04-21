@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "usbd_cdc_terminal.h"
-#include "terminal.h"
+#include "terminal/terminal.h"
 #include "app_usbd_cdc.h"
 #include "config_usbd_cdc_terminal.h"
 #include "mdrv.h"

@@ -8,7 +8,7 @@
 #ifndef COMMAND_HELP_H_
 #define COMMAND_HELP_H_
 
-#include "terminal.h"
+#include "terminal/terminal.h"
 
 const char* command_help__fn(void *terminal_context,
                              void *command_context,

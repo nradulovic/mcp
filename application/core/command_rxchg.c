@@ -18,7 +18,6 @@
 #include "command_rxchg.h"
 #include "config_usbd_cdc_terminal.h"
 #include "usbd_cdc_terminal.h"
-#include "hexador/hexador.h"
 #include "mdrv.h"
 
 #define RAW_DATA_SIZE           ((CONFIG__USBD_CDC_TERMINAL__BUFFER_SIZE / 2u) + 1u)

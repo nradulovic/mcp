@@ -8,7 +8,7 @@
 #ifndef COMMAND_GET_H_
 #define COMMAND_GET_H_
 
-#include "terminal.h"
+#include "terminal/terminal.h"
 
 const char* command_get__fn(void *terminal_context,
                             void *command_context,

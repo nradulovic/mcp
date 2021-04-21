@@ -8,7 +8,6 @@
 #include <string.h>
 
 #include "mdrv.h"
-#include "mde/mde__encoder.h"
 #include "generic/nk_debug.h"
 #include "generic/nk_array.h"
 #include "generic/nk_types.h"

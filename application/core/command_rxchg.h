@@ -8,7 +8,7 @@
 #ifndef COMMAND_RXCHG_H_
 #define COMMAND_RXCHG_H_
 
-#include "terminal.h"
+#include "terminal/terminal.h"
 
 struct nk_string;
 
