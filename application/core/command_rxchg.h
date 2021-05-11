@@ -8,13 +8,11 @@
 #ifndef COMMAND_RXCHG_H_
 #define COMMAND_RXCHG_H_
 
-#include "terminal/terminal.h"
-
-struct nk_string;
+#include "generic/terminal/nk_terminal.h"
 
 const char* command_rxchg__fn(void *terminal_context,
-                              void *command_context,
-                              size_t arg_count,
-                              const char *arg_value[]);
+                            void *command_context,
+                            struct terminal_arguments *args,
+                            struct nk_string *output);
 
 #endif /* COMMAND_RXCHG_H_ */

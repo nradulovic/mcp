@@ -8,6 +8,11 @@
 #ifndef NEON_KIT_GENERIC_NK_ERROR_H_
 #define NEON_KIT_GENERIC_NK_ERROR_H_
 
+#if defined(__cplusplus)
+extern "C"
+{
+#endif
+
 enum nk_error
 {
     NK_ERROR__OK,
@@ -23,5 +28,9 @@ enum nk_error
     /* Buffer error */
     NK_ERROR__BUFFER_OVF
 };
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* NEON_KIT_GENERIC_NK_ERROR_H_ */

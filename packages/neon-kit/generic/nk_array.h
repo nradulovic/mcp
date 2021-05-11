@@ -2,7 +2,10 @@
  * nk_array.h
  *
  *  Created on: Apr 5, 2021
- *      Author: nenad
+ *      Author: (nbr) nenad.b.radulovic@gmail.com
+ *
+ *  08/05/2021: (nbr) Minor code formatting
+ *  11/05/2021: (nbr) Empty initializer will not initialize the buffer
  */
 
 #ifndef NEON_KIT_GENERIC_NK_ARRAY_H_
@@ -12,6 +15,11 @@
 #include <string.h>
 
 #include "nk_bits.h"
+
+#if defined(__cplusplus)
+extern "C"
+{
+#endif
 
 #define NK_ENABLED_ARRAY
 
@@ -135,9 +143,6 @@
                     length);                                                \
         } while (0)
 
-#define nk_array__item_size(array_p)                                        \
-        sizeof(*(array_p)->items)
-
 #define NK_ARRAY__BUCKET_T(item_type, item_no)                              \
         {                                                                   \
             struct NK_ARRAY__T(item_type) array;                            \
@@ -163,7 +168,9 @@
  * @brief   Static construction of empty array bucket
  */
 #define NK_ARRAY__BUCKET_INITIALIZER_EMPTY(self)                            \
-        NK_ARRAY__BUCKET_INITIALIZER((self), 0u, { 0 })
+        {                                                                   \
+            .array = NK_ARRAY__INITIALIZER((self)->buffer, 0)               \
+        }
 
 /**
  * @brief   Runtime construction of an array bucket from dynamic buffer
@@ -178,8 +185,8 @@
                     l_buffer_size,                                          \
                     (array_p)->buffer,                                      \
                     l_buffer_length);                                       \
-            if (l_buffer != NULL) {                                       \
-                memcpy((array_p)->buffer, l_buffer, l_buffer_length);     \
+            if (l_buffer != NULL) {                                         \
+                memcpy((array_p)->buffer, l_buffer, l_buffer_length);       \
             }                                                               \
         } while (0)
 
@@ -201,7 +208,15 @@
                 static_buffer,                                              \
                 NK_BITS__ARRAY_SIZE(static_buffer))
 
+
+#define NK_ARRAY__ITEM_SIZE(array_p)                                        \
+        sizeof(*(array_p)->items)
+
 #define NK_ARRAY__FREE(array_p)                                             \
         ((array_p)->item_no - (array_p)->length)
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* NEON_KIT_GENERIC_NK_ARRAY_H_ */

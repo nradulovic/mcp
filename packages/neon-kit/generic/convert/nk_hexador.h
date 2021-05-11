@@ -5,8 +5,8 @@
  *      Author: nenad
  */
 
-#ifndef GENERIC_HEXADOR_HEXADOR_H_
-#define GENERIC_HEXADOR_HEXADOR_H_
+#ifndef GENERIC_CONVERT_NK_HEXADOR_H_
+#define GENERIC_CONVERT_NK_HEXADOR_H_
 
 #include <stddef.h>
 
@@ -25,4 +25,4 @@ struct nk_hexador__result
 nk_hexador__to_hex(const struct nk_types__array__u8 *buffer,
                    struct nk_string *string);
 
-#endif /* GENERIC_HEXADOR_HEXADOR_H_ */
+#endif /* GENERIC_CONVERT_NK_HEXADOR_H_ */

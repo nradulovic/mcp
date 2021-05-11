@@ -24,9 +24,11 @@ struct bit_buffer
     NK_ARRAY__BUCKET_T(uint8_t, NK_BITS__DIVIDE_ROUNDUP(IO_BUFFER_LENGTH, 8u))
 ;
 
-static struct mdrv__exc_buffer_bucket g__tx__buffer = NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__tx__buffer)
+static struct mdrv__exc_buffer_bucket g__tx__buffer =
+        NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__tx__buffer)
 ;
-static struct mdrv__exc_buffer_bucket g__rx__buffer = NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__rx__buffer)
+static struct mdrv__exc_buffer_bucket g__rx__buffer =
+        NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__rx__buffer)
 ;
 static struct bit_buffer g__bit_buffer = NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__bit_buffer)
 ;

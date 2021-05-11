@@ -8,7 +8,7 @@
 #ifndef NEON_KIT_GENERIC_NK_BITS_H_
 #define NEON_KIT_GENERIC_NK_BITS_H_
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C"
 {
 #endif
@@ -170,7 +170,7 @@ extern "C"
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }
 #endif
 
