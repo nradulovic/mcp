@@ -164,12 +164,12 @@ nk_string__append_literal(struct nk_string *self, const char *literal, size_t li
 }
 
 void
-nk_string__append_buffer(struct nk_string *self, const char *buffer)
+nk_string__append_c_string(struct nk_string *self, const char * literal)
 {
-    size_t buffer_len = strlen(buffer);
-    size_t to_copy = MIN(nk_string__free(self), buffer_len);
+    size_t literal_length = strlen(literal);
+    size_t to_copy = MIN(nk_string__free(self), literal_length);
 
-    memcpy(self->items + self->length, buffer, to_copy);
+    memcpy(self->items + self->length, literal, to_copy);
     self->length += to_copy;
 }
 

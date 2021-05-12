@@ -168,7 +168,7 @@ void
 nk_string__append_literal(struct nk_string *self, const char * literal, size_t literal_length);
 
 void
-nk_string__append_buffer(struct nk_string *self, const char *buffer);
+nk_string__append_c_string(struct nk_string *self, const char * literal);
 
 void
 nk_string__copy(struct nk_string *self, const struct nk_string * other);

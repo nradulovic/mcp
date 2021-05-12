@@ -10,7 +10,7 @@
 #include "generic/nk_string.h"
 #include "generic/terminal/nk_terminal.h"
 
-static void
+static int
 process_command_line(struct terminal_descriptor *terminal,
                      const struct nk_string *command_string,
                      struct nk_string *output)
@@ -27,7 +27,7 @@ process_command_line(struct terminal_descriptor *terminal,
 
     /* If we have just enter (\r or \n) just return */
     if (command_string->length <= 1u) {
-        return;
+        return 0;
     }
     /* Remove last character which is either \r or \n and create token views */
     command_view = nk_string__view(command_string, 0, command_string->length - 1u);
@@ -54,10 +54,10 @@ process_command_line(struct terminal_descriptor *terminal,
                                     command->interpreter.command_context,
                                     &tokens.array,
                                     output);
-            break;
+            return 0;
         }
     }
-
+    return 1;
 }
 
 void
@@ -111,7 +111,13 @@ terminal__interpret(struct terminal_descriptor *terminal, const struct nk_string
 
         /* Found '\n' in the string, send the string to process and then remove it from working buffer */
         command_string = nk_string__view(terminal->p__working_buffer, 0u, find_n.value + 1u);
-        process_command_line(terminal, &command_string, output);
+        if (process_command_line(terminal, &command_string, output) == 1) {
+            if (terminal->p__error_message) {
+                nk_string__append(output, terminal->p__error_message);
+            } else {
+                nk_string__append_literal(output, NK_STRING__LITERAL("unknown command\r\n"));
+            }
+        }
         nk_string__lstrip(terminal->p__working_buffer, &command_string);
     } while (true);
 }
