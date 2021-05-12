@@ -117,12 +117,14 @@ void mdrv__application__pin__init_output(void *context, bool value)
 {
     mdrv__application__pin__write(context, value);
     LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinPull(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_PULL_NO);
 }
 
 void mdrv__application__pin__init_input(void *context)
 {
     (void) context;
     LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinPull(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_PULL_DOWN);
 }
 
 void mdrv__application__pin__init_trigger(void *context)

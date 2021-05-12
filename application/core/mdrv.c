@@ -17,6 +17,14 @@
 #define IO_BUFFER_LENGTH                2048u
 #define MIN_PRE_TX_PERIODS              10u
 
+#define DEBUG_STATUS__TX                0
+#define DEBUG_STATUS__RX                1
+
+#if ((DEBUG_STATUS__RX == 1) || (DEBUG_STATUS__TX == 1))
+#include "stm32f4xx.h"
+#include "config_peripherals.h"
+#endif
+
 struct mdrv__exc_buffer_bucket
     NK_ARRAY__BUCKET_TYPED_T(bool, IO_BUFFER_LENGTH, struct nk_types__array__bool)
 ;
@@ -35,9 +43,9 @@ static struct bit_buffer g__bit_buffer = NK_ARRAY__BUCKET_INITIALIZER_EMPTY(&g__
 
 static const struct mdrv__config default_config = {
     .idle = MDRV__CONFIG__IDLE__FLOAT,
-    .pre_tx_state = MDRV__CONFIG__PRE_TX__LOW,
+    .pre_tx_state = MDRV__CONFIG__PRE_TX__FLOAT,
     .pre_tx_period_count = 512u,
-    .quarter_period_us = 5u};
+    .quarter_period_us = 4u};
 
 static void set_idle(const struct mdrv__context *context)
 {
@@ -82,6 +90,7 @@ size_t mdrv__get_io_buffer_length(const struct mdrv__context *context)
 enum nk_error mdrv__xchg(struct mdrv__context *context,
                          const struct nk_types__array__u8 *wr_data,
                          struct nk_types__array__u8 *rd_data,
+                         size_t wr_size,
                          size_t rx_size)
 {
     struct nk_manchester__result mnc_result;
@@ -98,8 +107,13 @@ enum nk_error mdrv__xchg(struct mdrv__context *context,
     mnc_result = nk_manchester__encode__biphasel(wr_data, &g__tx__buffer.array);
 
     if (mnc_result.error != NK_ERROR__OK) {
-        return mnc_result.error;
+        return NK_ERROR__BUFFER_OVF;
     }
+    if ((wr_size * 2u) > g__tx__buffer.array.length) {
+        return NK_ERROR__BUFFER_OVF;
+    }
+    g__tx__buffer.array.length = wr_size * 2u;
+
     if (context->p__config->pre_tx_period_count != 0) {
         uint32_t pre_tx_period;
         pre_tx_period = MAX(context->p__config->pre_tx_period_count, MIN_PRE_TX_PERIODS);
@@ -121,7 +135,7 @@ enum nk_error mdrv__xchg(struct mdrv__context *context,
         case NK_ERROR__DATA_ODD:
             return NK_ERROR__DATA_ODD;
         case NK_ERROR__BUFFER_OVF:
-            return NK_ERROR__BUFFER_OVF;
+            return NK_ERROR__DATA_OVF;
         default:
             return NK_ERROR__DATA_INVALID;
         }
@@ -165,19 +179,41 @@ void mdrv__it(struct mdrv__context *context)
          * Write the first bit together with initialization. Since this is the first bit, we don't
          * need to check if we have reached end of transmission like we do in MDRV__STATE__TX
          */
+#if (DEBUG_STATUS__TX == 1)
+        if (context->p__tx_index & 0x1) {
+            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+        } else {
+            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
+        }
+#endif
         context->p__ll.pin_init_output(context->p__ll_context,
                                        g__tx__buffer.array.items[context->p__tx_index++]);
         context->p__state = MDRV__STATE__TX_FHI;
         break;
     case MDRV__STATE__TX_FH:
+#if (DEBUG_STATUS__TX == 1)
+        if (context->p__tx_index & 0x1) {
+            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+        } else {
+            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
+        }
+#endif
         context->p__ll.pin_write(context->p__ll_context,
                                  g__tx__buffer.array.items[context->p__tx_index++]);
         context->p__state = MDRV__STATE__TX_FHI;
         break;
     case MDRV__STATE__TX_FHI:
+
         context->p__state = MDRV__STATE__TX_SH;
         break;
     case MDRV__STATE__TX_SH: {
+#if (DEBUG_STATUS__TX == 1)
+        if (context->p__tx_index & 0x1) {
+            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+        } else {
+            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
+        }
+#endif
         context->p__ll.pin_write(context->p__ll_context,
                                  g__tx__buffer.array.items[context->p__tx_index++]);
         context->p__state = MDRV__STATE__TX_SHI;
@@ -208,22 +244,33 @@ void mdrv__it(struct mdrv__context *context)
         context->p__ll.tim_start(context->p__ll_context, context->p__config->quarter_period_us);
         break;
     case MDRV__STATE__RX_FHI: {
+#if (DEBUG_STATUS__RX == 1)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
+#endif
         bool value = context->p__ll.pin_read(context->p__ll_context);
         g__rx__buffer.array.items[g__rx__buffer.array.length++] = value;
         context->p__state = MDRV__STATE__RX_FHS;
         break;
     }
     case MDRV__STATE__RX_FHS:
-
+#if (DEBUG_STATUS__RX == 1)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+#endif
         context->p__state = MDRV__STATE__RX_SHI;
         break;
     case MDRV__STATE__RX_SHI: {
+#if (DEBUG_STATUS__RX == 1)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
+#endif
         bool value = context->p__ll.pin_read(context->p__ll_context);
         g__rx__buffer.array.items[g__rx__buffer.array.length++] = value;
         context->p__state = MDRV__STATE__RX_SHS;
         break;
     }
     case MDRV__STATE__RX_SHS:
+#if (DEBUG_STATUS__RX == 1)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+#endif
         if (g__rx__buffer.array.length == context->p__rx_size) {
             set_idle(context);
             context->p__ll.tim_stop(context->p__ll_context);

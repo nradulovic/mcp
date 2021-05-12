@@ -96,9 +96,10 @@ void mdrv__init(struct mdrv__context *context, const struct mdrv__ll *ll, void *
 int mdrv__set_config(struct mdrv__context *context, const struct mdrv__config *config);
 size_t mdrv__get_io_buffer_length(const struct mdrv__context *context);
 enum nk_error mdrv__xchg(struct mdrv__context *context,
-               const struct nk_types__array__u8 *wr_data,
-               struct nk_types__array__u8 *rd_data,
-               size_t rd_size);
+                         const struct nk_types__array__u8 *wr_data,
+                         struct nk_types__array__u8 *rd_data,
+                         size_t wr_size,
+                         size_t rx_size);
 void mdrv__it(struct mdrv__context *context);
 
 #endif /* MDRV_H_ */

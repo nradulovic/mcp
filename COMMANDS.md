@@ -41,11 +41,3 @@ rxchg <data> <wr_bit_length> <rd_bit_length>
 - `rd_bit_length` - Number of bits to actually read in DEC notation.
 
 
-## Command `dwrite`
-
-Write to register in Debug Access Mode
-
-## Command `dread`
-
-Read from register in Debug Access Mode
-

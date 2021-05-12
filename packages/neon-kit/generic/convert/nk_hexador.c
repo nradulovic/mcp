@@ -27,7 +27,7 @@ nk_hexador__to_bin(const struct nk_string *string,
         result.value = 0u;
         return result;
     }
-    if ((string->length / 2u) > buffer->length) {
+    if ((string->length / 2u) > buffer->item_no) {
         result.error = NK_ERROR__BUFFER_OVF;
         result.value = 0u;
         return result;
@@ -38,8 +38,8 @@ nk_hexador__to_bin(const struct nk_string *string,
         struct nk_result__u8 htob_result;
         struct nk_convert__hex hex;
 
-        hex.lsb = string->items[i];
-        hex.msb = string->items[i + 1];
+        hex.msb = string->items[i];
+        hex.lsb = string->items[i + 1];
         htob_result = nk_convert__hex_to_bin(hex);
         if (htob_result.error != NK_ERROR__OK) {
             result.error = NK_ERROR__DATA_INVALID;
@@ -47,6 +47,7 @@ nk_hexador__to_bin(const struct nk_string *string,
             break;
         }
         buffer->items[i / 2u] = htob_result.value;
+        buffer->length++;
     }
     return result;
 }
@@ -60,16 +61,18 @@ nk_hexador__to_hex(const struct nk_types__array__u8 *buffer,
     nk_assert(string);
     nk_assert(buffer);
 
-    if (string->length < (buffer->length * 2u)) {
+    if (string->item_no < (buffer->length * 2u)) {
         result.error = NK_ERROR__BUFFER_OVF;
         result.value = 0u;
         return result;
     }
 
     for (size_t i = 0u; i < buffer->length; i++) {
+        char char_buffer[2];
         struct nk_convert__hex btoh_result = nk_convert__bin_to_hex(buffer->items[i]);
-        string->items[i * 2u] = btoh_result.lsb;
-        string->items[i * 2u + 1u] = btoh_result.msb;
+        char_buffer[0] = btoh_result.msb;
+        char_buffer[1] = btoh_result.lsb;
+        nk_string__append_literal(string, char_buffer, 2);
     }
     result.error = NK_ERROR__OK;
     result.value = buffer->length;

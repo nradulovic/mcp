@@ -115,7 +115,7 @@ nk_manchester__decode__biphasel(const struct nk_types__array__bool *source, stru
         return result;
     }
     result.error = NK_ERROR__OK;
-    result.value = source->length;
+    result.value = source->length / 2u;
     for (size_t i = 0u; i < source->length; i += 16u) {
         struct nk_manchester__result byte_result;
         struct nk_types__array__bool window;

@@ -36,51 +36,41 @@ struct usbd_cdc_terminal__state
 
 static void usb_receive(void *arg, const void *data, uint16_t length);
 
-struct command_id NK_STRING__BUCKET_T(20);
+struct command_id
+    NK_STRING__BUCKET_T(20)
+;
 
 static struct command_id g__command_id__help = NK_STRING__BUCKET_INITIALIZER(&g__command_id__help,
-                                                                             "help");
+                    "help")
+;
 static struct command_id g__command_id__rxchg = NK_STRING__BUCKET_INITIALIZER(&g__command_id__rxchg,
-                                                                             "rxchg");
+                    "rxchg")
+;
 static struct command_id g__command_id__set = NK_STRING__BUCKET_INITIALIZER(&g__command_id__set,
-                                                                             "set");
+                    "set")
+;
 static struct command_id g__command_id__get = NK_STRING__BUCKET_INITIALIZER(&g__command_id__get,
-                                                                             "get");
-static const struct terminal__command_descriptor g__command_desc__help =
-{
+                    "get")
+;
+static const struct terminal__command_descriptor g__command_desc__help = {
     .command_id = &g__command_id__help.array,
-    .interpreter =
-    {
-        .fn = command_help__fn
-    }
-};
+    .interpreter = {
+        .fn = command_help__fn}};
 
-static const struct terminal__command_descriptor g__command_desc__rxchg =
-{
+static const struct terminal__command_descriptor g__command_desc__rxchg = {
     .command_id = &g__command_id__rxchg.array,
-    .interpreter =
-    {
-        .fn = command_rxchg__fn
-    }
-};
+    .interpreter = {
+        .fn = command_rxchg__fn}};
 
-static const struct terminal__command_descriptor g__command_desc__set =
-{
+static const struct terminal__command_descriptor g__command_desc__set = {
     .command_id = &g__command_id__set.array,
-    .interpreter =
-    {
-        .fn = command_set__fn
-    }
-};
+    .interpreter = {
+        .fn = command_set__fn}};
 
-static const struct terminal__command_descriptor g__command_desc__get =
-{
+static const struct terminal__command_descriptor g__command_desc__get = {
     .command_id = &g__command_id__get.array,
-    .interpreter =
-    {
-        .fn = command_get__fn
-    }
-};
+    .interpreter = {
+        .fn = command_get__fn}};
 
 static struct
     NK_ARRAY__BUCKET_TYPED_T(const struct terminal__command_descriptor *, 4, struct terminal_commands)
@@ -97,8 +87,7 @@ g__terminal_commands = NK_ARRAY__BUCKET_INITIALIZER(&g__terminal_commands,
 static struct terminal_descriptor g__terminal;
 static struct usbd_cdc_terminal__state g__state = {
     .usb_input = {
-        .data = NK_STRING__BUCKET_INITIALIZER_EMPTY(&g__state.usb_input.data)
-        }, };
+        .data = NK_STRING__BUCKET_INITIALIZER_EMPTY(&g__state.usb_input.data) }, };
 
 static void usb_receive(void *arg, const void *data, uint16_t length)
 {
@@ -115,13 +104,20 @@ static void usb_receive(void *arg, const void *data, uint16_t length)
 
 void usbd_cdc_terminal__init(void)
 {
-    static struct usbd_cdc_buffer arg_buffer = NK_STRING__BUCKET_INITIALIZER_EMPTY(&arg_buffer)
-    ;
+    static struct usbd_cdc_buffer arg_buffer = NK_STRING__BUCKET_INITIALIZER_EMPTY(&arg_buffer);
     static const struct app_usbd_cdc__context usbd_cdc_context = {
         .receive = usb_receive,
         .arg = &g__state};
     g__state.terminal = &g__terminal;
-    terminal__init(&g__terminal, &g__terminal_commands.array, &arg_buffer.array, NULL);
+    static struct
+        NK_STRING__BUCKET_T(100)
+    error_message =
+            NK_STRING__BUCKET_INITIALIZER(&error_message, "\n\rE0001: unknown command, type 'help' for help\n\r")
+    ;
+    terminal__init(&g__terminal,
+                   &g__terminal_commands.array,
+                   &arg_buffer.array,
+                   &error_message.array);
     app_usbd_cdc__init(&usbd_cdc_context);
 }
 
@@ -143,9 +139,7 @@ void usbd_cdc_terminal__loop(void)
     switch (sm_state) {
     case STATE_PROCESS:
         if (context->usb_input.is_pending) {
-            terminal__interpret(context->terminal,
-                                &context->usb_input.data.array,
-                                &output.array);
+            terminal__interpret(context->terminal, &context->usb_input.data.array, &output.array);
             nk_string__clear_all(&context->usb_input.data.array);
             context->usb_input.is_pending = false;
             if (output.array.length) {
