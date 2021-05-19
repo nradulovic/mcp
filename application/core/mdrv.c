@@ -19,7 +19,7 @@
 
 #define DEBUG_STATUS__TX                0
 #define DEBUG_STATUS__RX                0
-#define DEBUG_IGNORE_LAST_BIT           0
+#define DEBUG_IGNORE_LAST_BIT           1
 
 #if ((DEBUG_STATUS__RX == 1) || (DEBUG_STATUS__TX == 1))
 #include "stm32f4xx.h"
@@ -127,6 +127,14 @@ enum nk_error mdrv__xchg(struct mdrv__context *context,
     while (context->p__state != MDRV__STATE__IDLE) {
         ;
     }
+#if (DEBUG_IGNORE_LAST_BIT == 1)
+    /*
+     * When we have this enabled, we always force the last bit to be opposite of the bit before the
+     * last one.
+     */
+    g__rx__buffer.array.items[g__rx__buffer.array.length - 1u] =
+                    !g__rx__buffer.array.items[g__rx__buffer.array.length - 2u];
+#endif
     if ((rx_size != 0u) && (rd_data != NULL)) {
         mnc_result = nk_manchester__decode__biphasel(&g__rx__buffer.array, rd_data);
 
@@ -138,11 +146,6 @@ enum nk_error mdrv__xchg(struct mdrv__context *context,
         case NK_ERROR__BUFFER_OVF:
             return NK_ERROR__DATA_OVF;
         default:
-#if (DEBUG_IGNORE_LAST_BIT == 1)
-            if (mnc_result.value >= ((g__rx__buffer.array.length / 2u) - 1u)) {
-                return 0;
-            }
-#endif
             return NK_ERROR__DATA_INVALID;
         }
         if (mnc_result.value != rx_size) {
