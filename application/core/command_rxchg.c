@@ -51,18 +51,18 @@ const char* command_rxchg__fn(void *terminal_context,
 
     if (args->length == 1) {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rRaw Exchange Data (rxchg) command syntax:\n\r"
-                                                     "\n\rrxchg <data> <wr_bit_length> <rd_bit_length>\n\r"
-                                                     "\n\r"
-                                                     "  data          - Data array of 8-bit values written in HEX notation.\n\r"
-                                                     "  wr_bit_length - Number of bits to actually write in DEC notation.\n\r"
-                                                     "  rd_bit_length - Number of bits to actually read in DEC notation.\n\r")
+                                  NK_STRING__LITERAL("\r\nRaw Exchange Data (rxchg) command syntax:\r\n"
+                                                     "\r\nrxchg <data> <wr_bit_length> <rd_bit_length>\r\n"
+                                                     "\r\n"
+                                                     "  data          - Data array of 8-bit values written in HEX notation.\r\n"
+                                                     "  wr_bit_length - Number of bits to actually write in DEC notation.\r\n"
+                                                     "  rd_bit_length - Number of bits to actually read in DEC notation.\r\n")
                                   );
         return NULL;
     }
     if (args->length != 4) {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0300: Incorrect number of arguments.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0300: Incorrect number of arguments.\r\n")
                                   );
         return NULL;
     }
@@ -71,8 +71,8 @@ const char* command_rxchg__fn(void *terminal_context,
     /* This check is required by hexador to bin */
     if ((data_bits % 8u) != 0u) {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0302: Invalid syntax in argument <data>.\n\r"
-                                                     "Use HEX notation and 2 values per byte.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0302: Invalid syntax in argument <data>.\r\n"
+                                                     "Use HEX notation and 2 values per byte.\r\n")
                                   );
         return NULL;
     }
@@ -85,21 +85,21 @@ const char* command_rxchg__fn(void *terminal_context,
         break;
     default: {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0305: Value of argument <wr_bit_length> is out of range.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0305: Value of argument <wr_bit_length> is out of range.\r\n")
                                   );
         return NULL;
     }
     }
     if (write_bits == 0u) {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0304: Zero value of argument <wr_bit_length>.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0304: Zero value of argument <wr_bit_length>.\r\n")
                                   );
         return NULL;
     }
     if (write_bits > data_bits) {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0306: Value of argument <wr_bit_length> is bigger"
-                                                     " than <data> bit length.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0306: Value of argument <wr_bit_length> is bigger"
+                                                     " than <data> bit length.\r\n")
                                   );
         return NULL;
     }
@@ -110,7 +110,7 @@ const char* command_rxchg__fn(void *terminal_context,
         break;
     default: {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0308: Value of argument <rd_bit_length> is out of range.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0308: Value of argument <rd_bit_length> is out of range.\r\n")
                                   );
         return NULL;
     }
@@ -123,18 +123,18 @@ const char* command_rxchg__fn(void *terminal_context,
         break;
     case NK_ERROR__BUFFER_OVF:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0320: Error while converting HEX data (buffer overflow)\n\r")
+                                  NK_STRING__LITERAL("\r\nE0320: Error while converting HEX data (buffer overflow)\r\n")
                                   );
         return NULL;
     default:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0321: Error while converting HEX data\n\r")
+                                  NK_STRING__LITERAL("\r\nE0321: Error while converting HEX data\r\n")
                                   );
         return NULL;
     }
     if (hexador_result.value != args->items[ARG0_DATA].length) {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0309: Invalid values in argument <data>.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0309: Invalid values in argument <data>.\r\n")
                                   );
         return NULL;
     }
@@ -149,44 +149,44 @@ const char* command_rxchg__fn(void *terminal_context,
         break;
     case NK_ERROR__BUFFER_OVF:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0310: Error while executing exchange driver (not enough buffers)\n\r")
+                                  NK_STRING__LITERAL("\r\nE0310: Error while executing exchange driver (not enough buffers)\r\n")
                                   );
         return NULL;
     case NK_ERROR__DATA_ODD:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0312: Failed to convert from Manchester encoding (DATA_ODD).\n\r")
+                                  NK_STRING__LITERAL("\r\nE0312: Failed to convert from Manchester encoding (DATA_ODD).\r\n")
                                   );
         return NULL;
     case NK_ERROR__DATA_OVF:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0312: Failed to convert from Manchester encoding (DATA_OVF).\n\r")
+                                  NK_STRING__LITERAL("\r\nE0312: Failed to convert from Manchester encoding (DATA_OVF).\r\n")
                                   );
         return NULL;
     case NK_ERROR__DATA_INVALID:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0312: Failed to convert from Manchester encoding (DATA_INVALID).\n\r")
+                                  NK_STRING__LITERAL("\r\nE0312: Failed to convert from Manchester encoding (DATA_INVALID).\r\n")
                                   );
         return NULL;
     case NK_ERROR__DATA_UNDERFLOW:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0312: Failed to convert from Manchester encoding (DATA_UNDERFLOW).\n\r")
+                                  NK_STRING__LITERAL("\r\nE0312: Failed to convert from Manchester encoding (DATA_UNDERFLOW).\r\n")
                                   );
         return NULL;
     default:
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0313: Error while executing exchange driver (unknown reason).\n\r")
+                                  NK_STRING__LITERAL("\r\nE0313: Error while executing exchange driver (unknown reason).\r\n")
                                   );
         return NULL;
     }
-    nk_string__append_literal(output, NK_STRING__LITERAL("\n\r"));
+    nk_string__append_literal(output, NK_STRING__LITERAL("\r\n"));
     hexador_result = nk_hexador__to_hex(&raw_read_data.array, output);
 
     if (hexador_result.error != NK_ERROR__OK) {
         nk_string__append_literal(output,
-                                  NK_STRING__LITERAL("\n\rE0314: Error while converting response to HEX.\n\r")
+                                  NK_STRING__LITERAL("\r\nE0314: Error while converting response to HEX.\r\n")
                                   );
         return NULL;
     }
-    nk_string__append_literal(output, NK_STRING__LITERAL("\n\r"));
+    nk_string__append_literal(output, NK_STRING__LITERAL("\r\n"));
     return NULL;
 }

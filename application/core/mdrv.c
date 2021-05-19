@@ -19,7 +19,7 @@
 
 #define DEBUG_STATUS__TX                0
 #define DEBUG_STATUS__RX                0
-#define DEBUG_IGNORE_LAST_BIT           1
+#define DEBUG_IGNORE_LAST_BIT           0
 
 #if ((DEBUG_STATUS__RX == 1) || (DEBUG_STATUS__TX == 1))
 #include "stm32f4xx.h"

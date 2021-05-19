@@ -19,10 +19,10 @@ const char* command_set__fn(void *terminal_context,
 
     nk_string__append_literal(
             output,
-            NK_STRING__LITERAL("\n\rSet a value in MCP configuration (set) command syntax:\n\r"
-                               "\n\rset <key> <value>\n\r"
-                               "\n\r"
-                               "  key   - Key name which needs to be set.\n\r"
-                               "  value - A value which will be associated with the key.\n\r"));
+            NK_STRING__LITERAL("\r\nSet a value in MCP configuration (set) command syntax:\r\n"
+                               "\r\nset <key> <value>\r\n"
+                               "\r\n"
+                               "  key   - Key name which needs to be set.\r\n"
+                               "  value - A value which will be associated with the key.\r\n"));
     return NULL;
 }

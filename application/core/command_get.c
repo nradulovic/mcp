@@ -20,9 +20,9 @@ const char* command_get__fn(void *terminal_context,
 
     nk_string__append_literal(
             output,
-            NK_STRING__LITERAL("\n\rGet a value from MCP configuration (get) command syntax:\n\r"
-                               "\n\rget <key>\n\r"
-                               "\n\r"
-                               "  key - Key name which needs to be get.\n\r"));
+            NK_STRING__LITERAL("\r\nGet a value from MCP configuration (get) command syntax:\r\n"
+                               "\r\nget <key>\r\n"
+                               "\r\n"
+                               "  key - Key name which needs to be get.\r\n"));
     return NULL;
 }
