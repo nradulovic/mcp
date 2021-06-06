@@ -105,14 +105,28 @@ enum nk_error mdrv__xchg(struct mdrv__context *context,
     g__tx__buffer.array.length = 0u;
     g__rx__buffer.array.length = 0u;
 
+    if ((wr_size * 2u) > g__tx__buffer.array.item_no) {
+        return NK_ERROR__BUFFER_OVF;
+    }
+    if ((rx_size * 2u) > g__rx__buffer.array.item_no) {
+        return NK_ERROR__BUFFER_OVF;
+    }
+
     mnc_result = nk_manchester__encode__biphasel(wr_data, &g__tx__buffer.array);
 
     if (mnc_result.error != NK_ERROR__OK) {
         return NK_ERROR__BUFFER_OVF;
     }
+    /* We might specify the wr_size which is smaller than g__tx__buffer length since we want to
+     * support bit count writes. The next check ensure that we didn't receive the wr_size bigger
+     * than converted bits.
+     */
     if ((wr_size * 2u) > g__tx__buffer.array.length) {
         return NK_ERROR__BUFFER_OVF;
     }
+    /*
+     * Limit the number of bits which needs to be written.
+     */
     g__tx__buffer.array.length = wr_size * 2u;
 
     if (context->p__config->pre_tx_period_count != 0) {
@@ -132,8 +146,10 @@ enum nk_error mdrv__xchg(struct mdrv__context *context,
      * When we have this enabled, we always force the last bit to be opposite of the bit before the
      * last one.
      */
-    g__rx__buffer.array.items[g__rx__buffer.array.length - 1u] =
-                    !g__rx__buffer.array.items[g__rx__buffer.array.length - 2u];
+    if (g__rx__buffer.array.length >= 2u) {
+        g__rx__buffer.array.items[g__rx__buffer.array.length - 1u] =
+                            !g__rx__buffer.array.items[g__rx__buffer.array.length - 2u];
+    }
 #endif
     if ((rx_size != 0u) && (rd_data != NULL)) {
         mnc_result = nk_manchester__decode__biphasel(&g__rx__buffer.array, rd_data);
