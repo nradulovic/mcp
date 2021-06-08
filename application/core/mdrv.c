@@ -171,6 +171,7 @@ enum nk_error mdrv__xchg(struct mdrv__context *context,
     return 0;
 }
 
+__attribute__ ((optimize(3)))
 void mdrv__it(struct mdrv__context *context)
 {
     switch (context->p__state) {
@@ -186,7 +187,7 @@ void mdrv__it(struct mdrv__context *context)
             break;
         default:
             /*
-             * In this case we didn't initialize output mode so we need to do it at the moment of
+             * In this case we didn't initialise output mode so we need to do it at the moment of
              * transmission begin.
              */
             break;
@@ -201,15 +202,14 @@ void mdrv__it(struct mdrv__context *context)
         break;
     case MDRV__STATE__INIT_TX:
         /*
-         * Write the first bit together with initialization. Since this is the first bit, we don't
+         * Write the first bit together with initialisation. Since this is the first bit, we don't
          * need to check if we have reached end of transmission like we do in MDRV__STATE__TX
          */
+#if (DEBUG_STATUS__RX == 1) && (DEBUG_STATUS__TX == 0)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
+#endif
 #if (DEBUG_STATUS__TX == 1)
-        if (context->p__tx_index & 0x1) {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
-        } else {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
-        }
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
 #endif
         context->p__ll.pin_init_output(context->p__ll_context,
                                        g__tx__buffer.array.items[context->p__tx_index++]);
@@ -217,27 +217,21 @@ void mdrv__it(struct mdrv__context *context)
         break;
     case MDRV__STATE__TX_FH:
 #if (DEBUG_STATUS__TX == 1)
-        if (context->p__tx_index & 0x1) {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
-        } else {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
-        }
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
 #endif
         context->p__ll.pin_write(context->p__ll_context,
                                  g__tx__buffer.array.items[context->p__tx_index++]);
         context->p__state = MDRV__STATE__TX_FHI;
         break;
     case MDRV__STATE__TX_FHI:
-
+#if (DEBUG_STATUS__TX == 1)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+#endif
         context->p__state = MDRV__STATE__TX_SH;
         break;
     case MDRV__STATE__TX_SH: {
 #if (DEBUG_STATUS__TX == 1)
-        if (context->p__tx_index & 0x1) {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
-        } else {
-            HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
-        }
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_SET);
 #endif
         context->p__ll.pin_write(context->p__ll_context,
                                  g__tx__buffer.array.items[context->p__tx_index++]);
@@ -245,6 +239,9 @@ void mdrv__it(struct mdrv__context *context)
         break;
     }
     case MDRV__STATE__TX_SHI:
+#if (DEBUG_STATUS__TX == 1)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+#endif
         if (context->p__tx_index == g__tx__buffer.array.length) {
             context->p__state = MDRV__STATE__TX_COMPLETE;
         } else {
@@ -252,8 +249,11 @@ void mdrv__it(struct mdrv__context *context)
         }
         break;
     case MDRV__STATE__TX_COMPLETE:
+#if (DEBUG_STATUS__RX == 1) && (DEBUG_STATUS__TX == 0)
+        HAL_GPIO_WritePin(MCP_STATUS_GPIO_PORT, MCP_STATUS_PIN, GPIO_PIN_RESET);
+#endif
+        set_idle(context);
         if (context->p__rx_size == 0u) {
-            set_idle(context);
             context->p__ll.tim_stop(context->p__ll_context);
             context->p__state = MDRV__STATE__IDLE;
         } else {

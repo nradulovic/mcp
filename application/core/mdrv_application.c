@@ -123,8 +123,9 @@ void mdrv__application__pin__init_output(void *context, bool value)
 void mdrv__application__pin__init_input(void *context)
 {
     (void) context;
+    LL_GPIO_SetPinPull(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_PULL_UP);
     LL_GPIO_SetPinMode(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_MODE_INPUT);
-    LL_GPIO_SetPinPull(MCP_DATA_GPIO_PORT, MCP_DATA_PIN, LL_GPIO_PULL_DOWN);
+    /* Do not pull the input down because that will interfere with edge detection during input */
 }
 
 void mdrv__application__pin__init_trigger(void *context)
