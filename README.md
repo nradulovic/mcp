@@ -31,7 +31,8 @@ For hardware connection refer to [WIRING.md](WIRING.md).
 ### Importing project
 
 1. Choose `File` -> `Import...`
-2. In Import window select `General` -> `Existing Projects into Workspace`, click `Next`
+2. In Import window select `General` -> `Existing Projects into Workspace`, 
+   click `Next`
 3. Choose `Select root directory` then click on `Browse...` button
 4. Navigate to downloaded project folder and click `Open`
 5. In `Projects:` text box select `mcp` project
@@ -81,3 +82,23 @@ Finished building: mcp.list
 4. Click `Run` -> `Resume` to run the program.
 
 
+## Release process
+
+When creating a new release go through the following steps:
+
+1. Edit the version string `APP_VERSION_STRING` in application configuration 
+   file: `configuration/config_application.h`.
+2. Edit the timestamp string `APP_TIMESTAMP_STRING` in application configuration
+   file: `configuration/config_application.h`.
+3. Create commit and push
+
+## Configuration
+
+The application is currently configured during the compilation.
+
+### Communication speed
+
+The application uses quarter of a bit period to generate the waveform. This 
+setting is specified in file `mdrv.c` in data structure called 
+`g__default_config` in structure membere `quarter_period_us`. The time is 
+specified in __us__.
