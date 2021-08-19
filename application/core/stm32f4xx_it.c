@@ -1,7 +1,9 @@
 
-#include "config_mdrv_application.h"
+#include "config_peripherals.h"
 #include "stm32f4xx_hal.h"
 #include "error_handler.h"
+#include "mdrv_application.h"
+#include "poll_timer.h"
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
@@ -45,6 +47,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
     HAL_IncTick();
+    poll_timer__isr();
 }
 
 void MDRV_TIME_BASE_CONFIG__TIM_IRQ_HANDLER(void)

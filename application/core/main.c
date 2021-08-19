@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "mdrv.h"
 #include "mdrv_application.h"
@@ -23,10 +24,9 @@ static const struct mdrv__ll mdrv__ll = {
     .tim_start_on_trigger = mdrv__application__tim__start_on_trigger};
 
 static struct mdrv__context g__mdrv__context;
-static struct mcp_config__context g__mcp_config__context;
 static struct usbd_cdc_terminal__context g__usbd_cdc_terminal__context = {
     .mdrv = &g__mdrv__context,
-    .config = &g__mcp_config__context};
+    .config = NULL};
 
 int main(void)
 {
