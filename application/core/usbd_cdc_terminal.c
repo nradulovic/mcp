@@ -72,7 +72,7 @@ static const struct terminal__command_descriptor g__command_desc__get = {
     .interpreter = {
         .fn = command_get__fn}};
 
-static struct
+static struct terminal_command
     NK_ARRAY__BUCKET_TYPED_T(const struct terminal__command_descriptor *, 4, struct terminal_commands)
 g__terminal_commands = NK_ARRAY__BUCKET_INITIALIZER(&g__terminal_commands,
                     4,
@@ -142,7 +142,7 @@ void usbd_cdc_terminal__loop(void)
             terminal__interpret(context->terminal, &context->usb_input.data.array, &output.array);
             nk_string__clear_all(&context->usb_input.data.array);
             context->usb_input.is_pending = false;
-            if (output.array.length) {
+            if (output.array.length != 0u) {
                 enum app_usbd_cdc__error error;
 
                 error = app_usbd_cdc__transmit(output.array.items, (uint16_t) output.array.length);
