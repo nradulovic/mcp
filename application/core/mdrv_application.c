@@ -6,7 +6,7 @@
  */
 
 #include "mdrv_application.h"
-#include "config_mdrv_application.h"
+#include "config_peripherals.h"
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_ll_tim.h"
 #include "stm32f4xx_ll_gpio.h"
@@ -26,7 +26,7 @@ void mdrv__application__init(struct mdrv__context *mdrv_context)
 
     /* Initialize time base timer */
     MDRV_TIME_BASE_CONFIG__TIM_CLK_ENABLE();
-    HAL_NVIC_SetPriority(MDRV_TIME_BASE_CONFIG__TIM_IRQN, 0, 0);
+    HAL_NVIC_SetPriority(MDRV_TIME_BASE_CONFIG__TIM_IRQN, MDRV_TIME_BASE_CONFIG__TIM_IRQ_PRIO, 0);
     HAL_NVIC_EnableIRQ(MDRV_TIME_BASE_CONFIG__TIM_IRQN);
     MDRV_TIME_BASE_CONFIG__TIM->CR1 = 0u;
     MDRV_TIME_BASE_CONFIG__TIM->DIER = 0u;
