@@ -20,7 +20,7 @@ const char* command_help__fn(void *terminal_context,
 
     nk_string__append_literal(output,
                               NK_STRING__LITERAL(
-                                  "\r\n## Manchester Code Proxy (MCP)"
+                                  "\r\n## Manchester Code Proxy (MCP) "
                                   APP_VERSION_STRING
                                   " ("
                                   APP_TIMESTAMP_STRING
