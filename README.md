@@ -102,3 +102,22 @@ The application uses quarter of a bit period to generate the waveform. This
 setting is specified in file `mdrv.c` in data structure called 
 `g__default_config` in structure membere `quarter_period_us`. The time is 
 specified in __us__.
+
+## Clock stability and accuracy
+
+This firmware uses High Speed External (HSE) oscillator clock as its main clock
+source. This clock is used to derive all peripheral clocks and software 
+timeouts.
+
+On the Discovery Kit board HSE oscillator is connected to X2 crystal. There is
+no information available which part numbers are used (Bill of Materials is not
+accessible on manufacturers site). The markings on the crystal are: `8.000s3Z`.
+Unfortunately, information on crystal marking is also not available. 
+
+The only fact that is known about used crystal is that must fulfill the USB 2.0
+specification for clock accuracy. The USB 2.0 specification states that for 
+full-speed communications, the data rate is specified to be 12 Mbps +/- 0.25%.
+
+This means, that the used crystal has at least +/- 0.25% accuracy. As for 
+stability of the clock, no information is available.
+
