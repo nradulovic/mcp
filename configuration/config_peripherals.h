@@ -2,7 +2,6 @@
  * config_peripherals.h
  *
  *  Created on: Mar 8, 2021
- *      Author: nenad
  */
 
 #ifndef CONFIG_PERIPHERALS_H_

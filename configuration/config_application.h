@@ -2,7 +2,6 @@
  * config_application.h
  *
  *  Created on: Aug 10, 2021
- *      Author: nenad
  */
 
 #ifndef CONFIG_APPLICATION_H_

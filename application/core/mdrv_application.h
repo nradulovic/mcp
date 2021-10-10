@@ -1,8 +1,14 @@
+
+/*
+ * Copyright (C) IngBiro - Jovan Jovanovic
+ * 
+ * +381 63 477858 Jovan Jovanovic (info@ingbiro.net)
+ * Vizantijski Bulevar 98/12
+ */
 /*
  * mdrv_time_base.h
  *
  *  Created on: Mar 8, 2021
- *      Author: nenad
  */
 
 #ifndef MDRV_APPLICATION_H_

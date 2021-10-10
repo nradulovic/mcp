@@ -1,4 +1,10 @@
 
+/*
+ * Copyright (C) IngBiro - Jovan Jovanovic
+ * 
+ * +381 63 477858 Jovan Jovanovic (info@ingbiro.net)
+ * Vizantijski Bulevar 98/12
+ */
 #include "config_peripherals.h"
 #include "stm32f4xx_hal.h"
 #include "error_handler.h"

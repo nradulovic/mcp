@@ -2,7 +2,6 @@
  * config_usbd_cdc.h
  *
  *  Created on: Feb 15, 2021
- *      Author: nenad
  */
 
 #ifndef CONFIG_USBD_CDC_H_

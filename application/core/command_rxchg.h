@@ -1,8 +1,14 @@
+
+/*
+ * Copyright (C) IngBiro - Jovan Jovanovic
+ * 
+ * +381 63 477858 Jovan Jovanovic (info@ingbiro.net)
+ * Vizantijski Bulevar 98/12
+ */
 /*
  * command_rxchg.h
  *
  *  Created on: Mar 10, 2021
- *      Author: nenad
  */
 
 #ifndef COMMAND_RXCHG_H_

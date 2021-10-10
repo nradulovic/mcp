@@ -1,3 +1,10 @@
+
+/*
+ * Copyright (C) IngBiro - Jovan Jovanovic
+ * 
+ * +381 63 477858 Jovan Jovanovic (info@ingbiro.net)
+ * Vizantijski Bulevar 98/12
+ */
 #include <stdbool.h>
 #include <stddef.h>
 

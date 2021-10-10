@@ -2,7 +2,6 @@
  * config_usbd_cdc_terminal.h
  *
  *  Created on: Mar 1, 2021
- *      Author: nenad
  */
 
 #ifndef CONFIG_USBD_CDC_TERMINAL_H_

@@ -1,8 +1,14 @@
+
+/*
+ * Copyright (C) IngBiro - Jovan Jovanovic
+ * 
+ * +381 63 477858 Jovan Jovanovic (info@ingbiro.net)
+ * Vizantijski Bulevar 98/12
+ */
 /*
  * mcp_config.h
  *
  *  Created on: Mar 30, 2021
- *      Author: nenad
  */
 
 #ifndef CORE_MCP_CONFIG_H_

@@ -1,8 +1,13 @@
 /*
- * command_help.h
+ * Copyright (C) IngBiro - Jovan Jovanovic
+ * 
+ * +381 63 477858 Jovan Jovanovic (info@ingbiro.net)
+ * Vizantijski Bulevar 98/12
+ */
+/*
+ * command_get.h
  *
  *  Created on: Mar 1, 2021
- *      Author: nenad
  */
 
 #ifndef COMMAND_GET_H_

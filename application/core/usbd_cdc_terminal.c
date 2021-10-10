@@ -1,8 +1,14 @@
+
+/*
+ * Copyright (C) IngBiro - Jovan Jovanovic
+ * 
+ * +381 63 477858 Jovan Jovanovic (info@ingbiro.net)
+ * Vizantijski Bulevar 98/12
+ */
 /*
  * usbd_cdc_terminal.c
  *
  *  Created on: Mar 1, 2021
- *      Author: nenad
  */
 
 #include <stdbool.h>
